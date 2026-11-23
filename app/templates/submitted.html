@@ -2,24 +2,41 @@
 {% from "partials/macros.html" import icon %}
 {% block title %}{{ t('submitted.title') }}{% endblock %}
 {% block body_class %}page-review{% endblock %}
+{% set step = 4 %}
+{% set step_complete = true %}
+{% block journey_header %}{% include "partials/journey_header.html" %}{% endblock %}
 {% block content %}
-<section class="card success-hero" role="status">
-  <div class="success-icon" aria-hidden="true">{{ icon('check') }}</div>
-  <h1>{{ t('submitted.title') }}</h1>
-  <p class="muted">{{ t('submitted.sub') }}</p>
-  <p><span class="small muted">{{ t('claim.reference') }}</span><br><bdi dir="ltr" class="ref-box">{{ claim.reference }}</bdi></p>
+<header class="page-head">
+  <h1>{{ t('submitted.h1') }}</h1>
+  <p class="page-sub">{{ t('submitted.sub') }}</p>
+</header>
+
+<section class="success-card" role="status">
+  <span class="success-mark" aria-hidden="true">{{ icon('check') }}</span>
+  <h2>{{ t('submitted.title') }}</h2>
+  <p class="small muted">{{ t('claim.reference') }}</p>
+  <p class="ref"><bdi dir="ltr">{{ claim.reference }}</bdi></p>
   <p class="small muted">{{ t('submitted.at') }}: <bdi dir="ltr">{{ claim.submitted_at.strftime('%d/%m/%Y %H:%M') }} UTC</bdi></p>
-  <div class="button-row no-print">
-    <a class="btn btn-primary" href="/claims/{{ claim.id }}/export.json" download>{{ icon('download') }}<span>{{ t('submitted.download') }}</span></a>
-    <a class="btn btn-secondary" href="/claims/{{ claim.id }}/print" target="_blank" rel="noopener">{{ icon('print') }}<span>{{ t('submitted.print') }}</span></a>
-    <a class="btn btn-text" href="/">{{ t('submitted.new') }}</a>
-  </div>
 </section>
-<section class="card">
-  {% include "partials/summary.html" %}
-</section>
-<section class="card summary-section">
+
+{% include "partials/summary.html" %}
+
+<section class="card summary-card">
   <p class="local-note">{{ icon('lock') }}<span>{{ t('review.local_only') }}</span></p>
   <p class="small muted">{{ t('claim.readiness_note') }}</p>
+  <a class="btn btn-tertiary btn-block no-print" href="/">{{ icon('plus') }}<span>{{ t('submitted.new') }}</span></a>
 </section>
+
+<details class="card technical no-print" id="technical-options">
+  <summary class="card-title"><span>{{ t('submitted.technical') }}</span>{{ icon('chevron', 'summary-chev') }}</summary>
+  <p class="small muted">{{ t('submitted.technical_sub') }}</p>
+  <p class="small muted">{{ t('submitted.json_format') }}</p>
+  <a class="btn btn-secondary btn-block" href="/claims/{{ claim.id }}/export.json" download>{{ icon('download') }}<span>{{ t('submitted.download') }}</span> <bdi dir="ltr" class="small">claim-{{ claim.reference }}.json</bdi></a>
+</details>
+
+<div class="action-bar no-print">
+  <div class="action-inner">
+    <a class="btn btn-primary btn-block" href="/claims/{{ claim.id }}/print" target="_blank" rel="noopener">{{ icon('print') }}<span>{{ t('submitted.open_print') }}</span></a>
+  </div>
+</div>
 {% endblock %}

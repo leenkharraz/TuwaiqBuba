@@ -1,75 +1,97 @@
 {% from "partials/macros.html" import icon, field_row, source_btn, slug, state_chip %}
 <div class="ws" data-version="{{ version }}" data-processing="{{ 'true' if view.processing else 'false' }}"
      data-claim="{{ claim.id }}" data-step="{{ step }}">
+
+{# ---- page heading reflects the current application state (never the mockup) ---- #}
+<header class="page-head ws-head">
+  {% if not docs %}
+    <h1 id="docs-title">{{ t('start.h1') }}</h1>
+    <p class="page-sub">{{ t('start.h1_sub') }}</p>
+  {% elif view.processing %}
+    <h1 id="docs-title">{{ t('ws.reading') }}</h1>
+    <p class="page-sub">{{ t('ws.reading_sub') }}</p>
+  {% else %}
+    <h1 id="docs-title">{{ t('claim.details') }}</h1>
+    <p class="page-sub">{{ t('ws.details_sub') }}</p>
+  {% endif %}
+</header>
+
 <div class="ws-grid">
 
   {# ================= DOCUMENTS COLUMN ================= #}
   <section class="ws-docs" aria-labelledby="docs-title">
-    <div class="card upload-card" id="upload-zone">
-      <h1 id="docs-title" class="card-title">{{ t('docs.add_title') if not docs else t('docs.title') }}</h1>
-      {% if not docs %}<p class="lede small-lede">{{ t('start.message') }}</p>{% endif %}
-      {% if needed_types %}
-      <p class="needed-now" data-needed>{{ icon('alert') }}<span>{{ t('docs.needed_now') }}
-        {% for dt in needed_types %}<strong>{{ t('doctype.' ~ dt) }}</strong>{% if not loop.last %}، {% endif %}{% endfor %}</span></p>
-      {% endif %}
-      <div class="capture-actions">
-        <button type="button" class="btn btn-primary btn-lg" data-act="camera">{{ icon('camera') }}<span>{{ t('action.camera') }}</span></button>
-        <button type="button" class="btn btn-secondary btn-lg" data-act="pick">{{ icon('upload') }}<span>{{ t('action.upload') if not docs else t('docs.add_more') }}</span></button>
-      </div>
-      <p class="hint">{{ t('docs.hint', mb=max_mb) }}</p>
-      <div class="upload-feedback" data-upload-feedback aria-live="polite"></div>
-    </div>
 
     {% if docs %}
-    <ul class="doc-list" aria-label="{{ t('docs.title') }}">
-      {% for d in claim.active_documents %}
-      {% set dv = view.docs[d.id] %}
-      <li class="doc-card status-{{ d.status }} {% if dv.group in ('separate', 'pending', 'excluded') %}is-outside{% endif %}" id="doc-{{ d.id }}">
-        <a class="doc-thumb" href="/documents/{{ d.id }}/file" target="_blank" rel="noopener" aria-label="{{ t('doc.view') }} {{ d.original_filename }}">
-          {% if d.thumb_name %}<img src="/documents/{{ d.id }}/thumb" alt="" loading="lazy">{% else %}{{ icon(dv.doc_type or 'file') }}{% endif %}
-          {% if d.mime_type == 'application/pdf' %}<span class="thumb-tag">PDF</span>{% endif %}
-        </a>
-        <div class="doc-main">
-          <div class="doc-top">
-            <span class="doc-type">{{ icon(dv.doc_type or 'other') }}{{ t('doctype.' ~ (dv.doc_type or 'none')) }}</span>
-            {% if d.status in ('queued', 'processing') %}
-              <span class="pill pill-progress"><span class="spinner" aria-hidden="true"></span>{{ t('status.' ~ d.status) }}</span>
-            {% elif d.status == 'extracted' and d.extraction_mode == 'sample_fixture' %}
-              <span class="pill pill-sample">{{ icon('sparkle') }}{{ t('status.sample') }}</span>
-            {% elif d.status == 'extracted' %}
-              <span class="pill pill-ok">{{ icon('check') }}{{ t('status.extracted') }}</span>
-            {% else %}
-              <span class="pill pill-bad">{{ icon('alert') }}{{ t('status.' ~ d.status) }}</span>
-            {% endif %}
+    <div class="card docs-card">
+      <h2 class="card-title">{{ t('docs.original') }}</h2>
+      <ul class="doc-list" aria-label="{{ t('docs.title') }}">
+        {% for d in claim.active_documents %}
+        {% set dv = view.docs[d.id] %}
+        {% set tone = 'progress' if d.status in ('queued', 'processing') else ('ok' if d.status == 'extracted' else 'warn') %}
+        <li class="doc-card status-{{ d.status }} tone-{{ tone }} {% if dv.group in ('separate', 'pending', 'excluded') %}is-outside{% endif %}" id="doc-{{ d.id }}">
+          <div class="doc-row">
+            <span class="tile">
+              {% if tone == 'progress' %}{{ icon('clock') }}{% elif tone == 'warn' %}{{ icon('alert') }}{% else %}{{ icon(dv.doc_type or 'other') }}{% endif %}
+            </span>
+            <div class="doc-main">
+              <p class="doc-title">
+                {% if d.status in ('queued', 'processing') %}{{ t('status.' ~ d.status) }}
+                {% else %}{{ t('doctype.' ~ (dv.doc_type or 'none')) }}{% endif %}
+              </p>
+              <p class="doc-meta">
+                <bdi dir="ltr" class="doc-name">{{ d.original_filename }}</bdi>
+                {% if d.status == 'extracted' and d.extraction_mode == 'sample_fixture' %}<span> · {{ t('status.sample') }}</span>
+                {% elif d.status not in ('queued', 'processing') %}<span> · {{ t('status.' ~ d.status) }}</span>{% endif %}
+                {% if d.page_count and d.page_count > 1 %}<span> · {{ t('doc.pages', n=d.page_count) }}</span>{% endif %}
+                <span> · <bdi dir="ltr">{{ (d.size_bytes / 1024)|round|int }} KB</bdi></span>
+                {% if d.source == 'camera' %}<span> · {{ t('doc.camera') }}</span>{% endif %}
+                {% if d.source == 'sample_fixture' and d.extraction_mode != 'sample_fixture' %}<span> · {{ t('doc.sample') }}</span>{% endif %}
+              </p>
+            </div>
+            <a class="doc-thumb" href="/documents/{{ d.id }}/file" target="_blank" rel="noopener" aria-label="{{ t('doc.view') }} {{ d.original_filename }}">
+              {% if d.thumb_name %}<img src="/documents/{{ d.id }}/thumb" alt="" loading="lazy">{% else %}{{ icon(dv.doc_type or 'file') }}{% endif %}
+              {% if d.mime_type == 'application/pdf' %}<span class="thumb-tag">PDF</span>{% endif %}
+            </a>
           </div>
-          <p class="doc-name"><bdi dir="ltr">{{ d.original_filename }}</bdi></p>
-          <p class="doc-meta small muted">
-            <span dir="ltr">{{ (d.size_bytes / 1024)|round|int }} KB</span>
-            {% if d.page_count and d.page_count > 1 %} · {{ t('doc.pages', n=d.page_count) }}{% endif %}
-            {% if d.source == 'camera' %} · {{ t('doc.camera') }}{% endif %}
-            {% if d.source == 'sample_fixture' %} · {{ t('doc.sample') }}{% endif %}
-          </p>
+          {% if d.status in ('queued', 'processing') %}<div class="doc-progress" aria-hidden="true"><span></span></div>{% endif %}
+
           {% if dv.duplicate_of %}<p class="doc-flag">{{ icon('info') }}{{ t('doc.duplicate') }}</p>{% endif %}
           {% if dv.group in ('separate', 'pending', 'excluded') %}<p class="doc-flag warn">{{ icon('split') }}{{ t('doc.group.' ~ dv.group) }}</p>{% endif %}
           {% if dv.linked_invoice_label %}<p class="doc-flag ok">{{ icon('link') }}{{ t('doc.linked_to', invoice=dv.linked_invoice_label) }}</p>{% endif %}
-          {% if d.status == 'unreadable' and dv.readability_note %}<p class="doc-flag warn" dir="auto">{{ dv.readability_note }}</p>{% endif %}
-          {% if d.status == 'failed' %}<p class="doc-flag warn">{{ t('extract_error.' ~ (d.status_detail or 'unknown')) }}</p>{% endif %}
+          {% if d.status == 'unreadable' %}
+            <div class="doc-problem">
+              <p class="alert-title">{{ t('status.unreadable') }}</p>
+              <p dir="auto">{{ dv.readability_note or t('doc.unreadable_tip') }}</p>
+              <p class="small">{{ t('doc.retained') }}</p>
+            </div>
+          {% elif d.status == 'failed' %}
+            <div class="doc-problem">
+              <p class="alert-title">{{ t('status.failed') }}</p>
+              <p>{{ t('extract_error.' ~ (d.status_detail or 'unknown')) }}</p>
+              <p class="small">{{ t('doc.retained') }}</p>
+            </div>
+          {% elif d.status == 'unavailable' %}
+            <div class="doc-problem">
+              <p class="alert-title">{{ t('status.unavailable') }}</p>
+              <p>{{ t('mode.off_desc') }}</p>
+            </div>
+          {% endif %}
 
           <div class="doc-actions">
-            <a class="btn btn-ghost btn-sm" href="/documents/{{ d.id }}/file" target="_blank" rel="noopener">{{ icon('eye') }}<span>{{ t('doc.view') }}</span></a>
-            {% if d.status in ('unreadable', 'failed', 'unavailable') %}
-            <button type="button" class="btn btn-ghost btn-sm" data-act="retake" data-doc="{{ d.id }}">{{ icon('camera') }}<span>{{ t('doc.retake') }}</span></button>
-            {% endif %}
-            {% if d.source != 'sample_fixture' %}
-            <button type="button" class="btn btn-ghost btn-sm" data-act="replace" data-doc="{{ d.id }}">{{ icon('refresh') }}<span>{{ t('doc.replace') }}</span></button>
-            {% endif %}
+            <a class="btn btn-chip" href="/documents/{{ d.id }}/file" target="_blank" rel="noopener">{{ icon('eye') }}<span>{{ t('doc.view') }}</span></a>
             {% if d.status in ('failed', 'unavailable') %}
             <form method="post" action="/documents/{{ d.id }}/retry" data-async>
-              <button class="btn btn-ghost btn-sm" type="submit">{{ icon('refresh') }}<span>{{ t('doc.retry') }}</span></button>
+              <button class="btn btn-chip is-strong" type="submit">{{ icon('refresh') }}<span>{{ t('doc.retry') }}</span></button>
             </form>
             {% endif %}
+            {% if d.status in ('unreadable', 'failed', 'unavailable') %}
+            <button type="button" class="btn btn-chip" data-act="retake" data-doc="{{ d.id }}">{{ icon('camera') }}<span>{{ t('doc.retake') }}</span></button>
+            {% endif %}
+            {% if d.source != 'sample_fixture' %}
+            <button type="button" class="btn btn-chip" data-act="replace" data-doc="{{ d.id }}">{{ icon('refresh') }}<span>{{ t('doc.replace') if d.status == 'extracted' else t('doc.choose_file') }}</span></button>
+            {% endif %}
             <form method="post" action="/documents/{{ d.id }}/remove" data-async data-confirm="{{ t('doc.confirm_remove') }}">
-              <button class="btn btn-ghost btn-sm danger" type="submit">{{ icon('trash') }}<span>{{ t('doc.remove') }}</span></button>
+              <button class="btn btn-chip danger" type="submit">{{ icon('trash') }}<span>{{ t('doc.remove') }}</span></button>
             </form>
           </div>
 
@@ -87,7 +109,7 @@
               </div>
             </form>
             {% if dv.fields %}
-            <dl class="mini-fields">
+            <dl class="kv mini-fields">
               {% for f in dv.fields %}
               <div><dt>{{ field_label(field_name(f.key)) }}</dt>
                 <dd {% if f.kind in ('amount','ident','currency','date') %}dir="ltr"{% endif %}>{{ display_value(f) }}
@@ -103,26 +125,47 @@
             {% endif %}
           </details>
           {% endif %}
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
     {% endif %}
+
+    <div class="card upload-card" id="upload-zone">
+      <h2 class="card-title">{{ t('start.how_add') if not docs else t('ws.manage') }}</h2>
+      {% if needed_types %}
+      <p class="needed-now" data-needed>{{ icon('alert') }}<span>{{ t('docs.needed_now') }}
+        {% for dt in needed_types %}<strong>{{ t('doctype.' ~ dt) }}</strong>{% if not loop.last %}{{ '، ' if lang == 'ar' else ', ' }}{% endif %}{% endfor %}</span></p>
+      {% endif %}
+      <div class="choice-list capture-actions">
+        <button type="button" class="choice" data-act="pick">
+          <span class="tile">{{ icon('upload') }}</span>
+          <span class="choice-text"><strong>{{ t('action.upload') if not docs else t('docs.add_more') }}</strong><span>{{ t('action.upload_sub') }}</span></span>
+        </button>
+        <button type="button" class="choice" data-act="camera">
+          <span class="tile">{{ icon('camera') }}</span>
+          <span class="choice-text"><strong>{{ t('action.camera') }}</strong><span>{{ t('action.camera_sub') }}</span></span>
+        </button>
+      </div>
+      <p class="hint">{{ t('start.formats', mb=max_mb) }}</p>
+      <div class="upload-feedback" data-upload-feedback aria-live="polite"></div>
+    </div>
 
     {% if fixtures %}
     <div class="card sample-gallery">
-      <h2 class="card-title small-title">{{ icon('sparkle') }}{{ t('samples.title') }}</h2>
+      <h2 class="card-title">{{ icon('sparkle') }}{{ t('samples.title') }}</h2>
       <p class="small muted">{{ t('samples.sub') }}</p>
-      <ul>
+      <ul class="row-list">
         {% for f in fixtures %}
-        <li>
-          <div><strong>{{ resolve(f.title) }}</strong><p class="small muted">{{ resolve(f.purpose) }}</p></div>
+        <li class="row">
+          <span class="tile">{{ icon('sparkle') }}</span>
+          <span class="row-text"><strong>{{ resolve(f.title) }}</strong><span>{{ resolve(f.purpose) }}</span></span>
           {% if f.id in used_fixtures %}
             <span class="pill pill-ok">{{ icon('check') }}{{ t('samples.added') }}</span>
           {% else %}
           <form method="post" action="/claims/{{ claim.id }}/sample-documents" data-async>
             <input type="hidden" name="fixture_id" value="{{ f.id }}">
-            <button class="btn btn-secondary btn-sm" type="submit">{{ icon('plus') }}<span>{{ t('samples.add') }}</span></button>
+            <button class="btn btn-chip is-strong" type="submit">{{ icon('plus') }}<span>{{ t('samples.add') }}</span></button>
           </form>
           {% endif %}
         </li>
@@ -135,19 +178,25 @@
   {# ================= CLAIM COLUMN ================= #}
   <section class="ws-claim" aria-labelledby="status-title">
 
-    {# ---- validation / what is missing ---- #}
+    {# ---- what is missing / ready (from the validation engine) ---- #}
+    {% if docs %}
     <div class="card status-card {% if view.ready %}is-ready{% elif view.blocking_issues %}has-blocking{% endif %}" id="claim-status">
-      <h2 id="status-title" class="card-title">{{ t('claim.status_title') }}</h2>
-      {% if not docs %}
-        <p class="muted">{{ t('docs.empty') }}</p>
-      {% elif view.processing %}
-        <p class="processing-line"><span class="spinner" aria-hidden="true"></span>{{ t('claim.processing') }}</p>
-      {% endif %}
-      {% if docs and view.ready %}
-        <p class="ready-line">{{ icon('check-circle') }}<span>{{ t('claim.all_good') }}</span></p>
+      {% if view.ready %}
+        <div class="alert alert-ok">
+          <span class="alert-icon">{{ icon('check') }}</span>
+          <div>
+            <h2 id="status-title" class="alert-title">{{ t('ws.ready_title') }}</h2>
+            <p>{{ t('claim.all_good') }}</p>
+          </div>
+        </div>
         <p class="small muted">{{ t('claim.readiness_note') }}</p>
-      {% elif view.blocking_issues %}
-        <p class="count-line">{{ t('claim.blocking_count', n=view.blocking_issues|length) }}</p>
+      {% else %}
+        <h2 id="status-title" class="card-title">{{ t('claim.status_title') }}</h2>
+        {% if view.processing %}
+          <p class="processing-line"><span class="spinner" aria-hidden="true"></span>{{ t('claim.processing') }}</p>
+        {% elif view.blocking_issues %}
+          <p class="page-sub">{{ t('ws.attention_sub') }} · <strong>{{ t('claim.blocking_count', n=view.blocking_issues|length) }}</strong></p>
+        {% endif %}
       {% endif %}
 
       {% set shown = view.issues|selectattr('severity', 'ne', 'info')|list %}
@@ -165,20 +214,31 @@
       </ul>
       {% endif %}
     </div>
+    {% endif %}
 
     {# ---- documents that look like another visit ---- #}
     {% if view.proposals %}
     <div class="card proposal-card">
-      <h2 class="card-title">{{ icon('split') }}{{ t('claim.separate_title') }}</h2>
-      <p class="small">{{ t('claim.separate_body') }}</p>
+      <div class="alert alert-warn">
+        <span class="alert-icon">{{ icon('alert') }}</span>
+        <div>
+          <h2 class="alert-title">{{ t('claim.separate_title') }}</h2>
+          <p>{{ t('claim.separate_body') }}</p>
+        </div>
+      </div>
       <p class="small muted">{{ resolve(rules.separate_claims_note) }}</p>
       {% for p in view.proposals %}
       <div class="proposal">
-        <ul class="proposal-docs">
-          {% for did in p.doc_ids %}{% set pd = docs.get(did) %}{% if pd %}<li>{{ icon(view.docs[did].doc_type or 'other') }}<bdi dir="ltr">{{ pd.original_filename }}</bdi></li>{% endif %}{% endfor %}
-        </ul>
-        <p class="small">{% for r in p.reasons %}<span class="pill pill-warn">{{ t('reason.' ~ r) }}</span>{% endfor %}
-          {% if p.visit_date %}<span class="muted" dir="ltr">{{ fmt_date(p.visit_date) }}</span>{% endif %}</p>
+        <div class="row">
+          <span class="tile">{{ icon('layers') }}</span>
+          <div class="row-text">
+            {% if p.visit_date %}<strong dir="ltr" class="ltr-start">{{ fmt_date(p.visit_date) }}</strong>{% endif %}
+            <ul class="proposal-docs">
+              {% for did in p.doc_ids %}{% set pd = docs.get(did) %}{% if pd %}<li><bdi dir="ltr">{{ pd.original_filename }}</bdi></li>{% endif %}{% endfor %}
+            </ul>
+          </div>
+        </div>
+        <p class="pill-row">{% for r in p.reasons %}<span class="pill pill-warn">{{ t('reason.' ~ r) }}</span>{% endfor %}</p>
         <div class="inline-actions">
           <form method="post" action="/documents/{{ p.invoice_ids[0] }}/grouping" data-async>
             <input type="hidden" name="decision" value="separate">
@@ -186,7 +246,7 @@
           </form>
           <form method="post" action="/documents/{{ p.invoice_ids[0] }}/grouping" data-async>
             <input type="hidden" name="decision" value="same_visit">
-            <button class="btn btn-secondary btn-sm" type="submit">{{ t('act.confirm_same_visit') }}</button>
+            <button class="btn btn-tertiary btn-sm" type="submit">{{ t('act.confirm_same_visit') }}</button>
           </form>
         </div>
       </div>
@@ -194,41 +254,57 @@
     </div>
     {% endif %}
 
-    {# ---- claim details ---- #}
+    {# ---- claim total (engine totals, one line per currency) ---- #}
+    {% if view.totals %}
+    {% set ns = namespace(pay=0) %}
+    {% set counted = view.invoices|rejectattr('duplicate_of')|list %}
+    {% for inv in counted %}{% set ns.pay = ns.pay + (inv.payments|rejectattr('duplicate_of')|list|length) %}{% endfor %}
+    <div class="total-card">
+      <p class="total-label">{{ t('claim.totals_by_currency') if view.totals|length > 1 else t('claim.total') }}</p>
+      {% if view.totals|length > 1 %}
+        <p class="small muted">{{ t('claim.totals_by_currency_sub') }}</p>
+        <dl class="kv kv-tight">
+          {% for cur, amt in view.totals.items() %}<div><dt><bdi dir="ltr">{{ cur }}</bdi></dt><dd><bdi dir="ltr" class="num">{{ fmt_money(amt) }} {{ cur }}</bdi></dd></div>{% endfor %}
+        </dl>
+      {% else %}
+        {% for cur, amt in view.totals.items() %}<p class="total-amount"><bdi dir="ltr">{{ fmt_money(amt) }} {{ cur }}</bdi></p>{% endfor %}
+      {% endif %}
+      <p class="total-sub">{{ t('claim.totals_count', inv=counted|length, pay=ns.pay) }}</p>
+    </div>
+    {% endif %}
+
+    {# ---- patient and visit ---- #}
     {% if view.invoices or view.medical %}
     <div class="card details-card">
-      <h2 class="card-title">{{ t('claim.details') }}</h2>
+      <h2 class="card-title">{{ t('claim.patient_visit') }}</h2>
       <p class="small muted">{{ t('claim.details_sub') }}</p>
+      <div class="field-list">
       {% for name in ('patient_name', 'patient_identifier', 'provider_name', 'service_category', 'claim_location', 'service_date', 'diagnosis') %}
         {% set fld = view.claim_fields[name] %}
         {% if fld.status != 'missing' or name in ('patient_name', 'provider_name', 'service_category', 'claim_location', 'service_date') %}
           {{ field_row(fld, field_label(name), claim, t, display_value, source_label, categories, locations) }}
         {% endif %}
       {% endfor %}
+      </div>
     </div>
     {% endif %}
 
     {# ---- invoices ---- #}
     {% if docs %}
     <div class="card invoices-card">
-      <div class="card-title-row">
-        <h2 class="card-title">{{ t('claim.invoices') }}</h2>
-        {% if view.totals %}
-        <p class="total-chip">{{ t('claim.total') }}:
-          {% for cur, amt in view.totals.items() %}<bdi dir="ltr" class="mono">{{ fmt_money(amt) }} {{ cur }}</bdi>{% if not loop.last %} · {% endif %}{% endfor %}</p>
-        {% endif %}
-      </div>
+      <h2 class="card-title">{{ t('claim.invoice_details') }}</h2>
       {% if not view.invoices %}<p class="muted small">{{ t('claim.no_invoice_yet') }}</p>{% endif %}
       {% for inv in view.invoices %}
       <article class="invoice">
         <header class="invoice-head">
-          <div>
-            <p class="eyebrow">{{ icon('invoice') }}{{ t('claim.invoice') }}</p>
-            <p class="invoice-no"><bdi dir="ltr">{{ inv.fields.invoice_number.value or '—' }}</bdi></p>
+          <span class="tile">{{ icon('invoice') }}</span>
+          <div class="row-text">
+            <strong>{{ t('claim.invoice') }}</strong>
+            <span><bdi dir="ltr">{{ inv.fields.invoice_number.value or '—' }}</bdi>{% if inv.fields.total.value is not none %} · <bdi dir="ltr">{{ display_value(inv.fields.total) }} {{ inv.fields.currency.value or '' }}</bdi>{% endif %}</span>
           </div>
           <span class="pill {% if inv.payment_status in ('proof_attached', 'paid_on_invoice') %}pill-ok{% elif inv.payment_status == 'currency_differs' %}pill-warn{% else %}pill-bad{% endif %}">{{ t('paystatus.' ~ inv.payment_status) }}</span>
         </header>
-        <div class="field-grid">
+        <div class="field-list field-grid">
           {% for name in ('invoice_date', 'service_date', 'currency', 'subtotal', 'tax', 'total') %}
             {% set fld = inv.fields[name] %}
             {% if fld.status != 'missing' or name in ('invoice_date', 'currency', 'total') %}
@@ -237,22 +313,26 @@
           {% endfor %}
         </div>
         {% if inv.lines %}
-        <details class="lines">
+        <details class="lines" id="lines-{{ inv.doc_id }}">
           <summary>{{ t('doc.lines') }} ({{ inv.lines|length }})</summary>
           <ul class="line-list">
             {% for li in inv.lines %}
             <li><span dir="auto">{{ li.description or '—' }}{% if li.tooth_number %} · <span dir="ltr">#{{ li.tooth_number }}</span>{% endif %}</span>
-              <span dir="ltr" class="mono">{{ fmt_money(li.amount) if li.amount is not none else (li.amount_raw or '—') }}</span></li>
+              <span dir="ltr" class="num">{{ fmt_money(li.amount) if li.amount is not none else (li.amount_raw or '—') }}</span></li>
             {% endfor %}
           </ul>
         </details>
         {% endif %}
         <div class="payment-block">
-          <p class="eyebrow">{{ icon('payment_receipt') }}{{ t('claim.payment') }}</p>
+          <p class="eyebrow">{{ icon('payment_receipt') }}{{ t('claim.reconcile') }}</p>
+          <dl class="kv kv-tight">
+            <div><dt>{{ field_label('total') }}</dt><dd><bdi dir="ltr" class="num">{% if inv.fields.total.value is not none %}{{ display_value(inv.fields.total) }} {{ inv.fields.currency.value or '' }}{% else %}—{% endif %}</bdi></dd></div>
+            <div><dt>{{ t('claim.paid_total') }}</dt><dd><bdi dir="ltr" class="num">{% if inv.paid_total is not none %}{{ fmt_money(inv.paid_total) }} {{ inv.fields.currency.value or '' }}{% else %}—{% endif %}</bdi></dd></div>
+          </dl>
           {% for pv in inv.payments if not pv.duplicate_of %}
             <div class="payment">
-              {% if pv.link_basis %}<p class="small muted">{{ icon('link') }}{{ t('link.' ~ pv.link_basis) }}</p>{% endif %}
-              <div class="field-grid">
+              {% if pv.link_basis %}<p class="small muted link-basis">{{ icon('link') }}{{ t('link.' ~ pv.link_basis) }}</p>{% endif %}
+              <div class="field-list field-grid">
               {% for name in ('paid_amount', 'currency', 'payment_date', 'payment_method', 'transaction_reference') %}
                 {% set fld = pv.fields[name] %}
                 {% if fld.status != 'missing' or name == 'paid_amount' %}
@@ -263,7 +343,7 @@
             </div>
           {% else %}
             {% if inv.embedded_payment %}
-              {{ field_row(inv.fields.paid_amount, field_label('paid_amount'), claim, t, display_value, source_label) }}
+              <div class="field-list">{{ field_row(inv.fields.paid_amount, field_label('paid_amount'), claim, t, display_value, source_label) }}</div>
             {% else %}
               <p class="small muted">{{ t('paystatus.no_proof') }}</p>
             {% endif %}
@@ -282,9 +362,8 @@
       <ul class="checklist">
         {% for r in view.requirements %}
         <li class="req req-{{ r.status }}">
-          <span class="req-icon">{% if r.status == 'satisfied' %}{{ icon('check-circle') }}{% elif r.status == 'missing' %}{{ icon('alert') }}{% else %}{{ icon('info') }}{% endif %}</span>
-          <span class="req-label">{{ resolve(r.label) }}</span>
-          <span class="pill pill-{{ 'ok' if r.status == 'satisfied' else ('bad' if r.status == 'missing' else 'neutral') }}">{{ t('req.' ~ r.status) }}</span>
+          <span class="tile">{% if r.status == 'satisfied' %}{{ icon('check') }}{% elif r.status == 'missing' %}{{ icon('alert') }}{% else %}{{ icon('file') }}{% endif %}</span>
+          <span class="row-text"><strong class="req-label">{{ resolve(r.label) }}</strong><span>{{ t('req.' ~ r.status) }}</span></span>
         </li>
         {% endfor %}
       </ul>
@@ -292,15 +371,37 @@
     </div>
     {% endif %}
 
+    {# ---- service requirements reference (from the rules file) ---- #}
+    {% if rules and rules.categories %}
+    <details class="card services-card" id="service-requirements">
+      <summary class="card-title"><span>{{ t('req.services_view') }}</span>{{ icon('chevron', 'summary-chev') }}</summary>
+      <p class="small muted">{{ t('req.services_sub') }}</p>
+      <div class="services">
+        {% for cat in rules.categories.values() %}
+        <details class="service" id="service-{{ cat.id }}" {% if cat.id == view.category %}open{% endif %}>
+          <summary><span>{{ t('cat.' ~ cat.id) }}</span>{% if cat.id == view.category %}<span class="pill pill-neutral">{{ t('req.current') }}</span>{% endif %}</summary>
+          <ul class="service-reqs">
+            {% for r in cat.requirements %}
+            <li><span class="small-strong">{{ resolve(r.label) }}</span><span class="small muted">{{ t('req.when.' ~ r.when) if r.when in ('always', 'per_invoice', 'if_triggered', 'if_available', 'reminder') else '' }}</span></li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endfor %}
+      </div>
+      <p class="small muted">{{ t('req.services_note') }}</p>
+    </details>
+    {% endif %}
+
     {% if other_claims %}
     <div class="card other-claims">
-      <h2 class="card-title small-title">{{ t('claim.other_claims') }}</h2>
-      <ul class="draft-list">
+      <h2 class="card-title">{{ t('claim.other_claims') }}</h2>
+      <ul class="row-list">
         {% for c in other_claims %}
-        <li><a href="/claims/{{ c.id }}{% if c.status == 'submitted' %}/submitted{% endif %}">
-          <span class="pill {% if c.status == 'submitted' %}pill-ok{% else %}pill-neutral{% endif %}">{{ t('claim.saved') if c.status == 'submitted' else t('claim.draft') }}</span>
-          <span class="draft-meta">{{ t('docs.count', n=c.active_documents|length) }}</span>
-          {{ icon('arrow', 'flip') }}</a></li>
+        <li><a class="row row-link" href="/claims/{{ c.id }}{% if c.status == 'submitted' %}/submitted{% endif %}">
+          <span class="tile">{{ icon('layers') }}</span>
+          <span class="row-text"><strong>{{ t('claim.saved') if c.status == 'submitted' else t('claim.draft') }}</strong>
+            <span>{{ t('docs.count', n=c.active_documents|length) }}{% if c.reference %} · <bdi dir="ltr">{{ c.reference }}</bdi>{% endif %}</span></span>
+          {{ icon('chevron', 'row-chev') }}</a></li>
         {% endfor %}
       </ul>
     </div>
@@ -314,19 +415,19 @@
     <div class="action-summary">
       {% if view.totals %}
         <span class="small muted">{{ t('claim.total') }}</span>
-        <strong>{% for cur, amt in view.totals.items() %}<bdi dir="ltr" class="mono">{{ fmt_money(amt) }} {{ cur }}</bdi>{% if not loop.last %} · {% endif %}{% endfor %}</strong>
+        <strong>{% for cur, amt in view.totals.items() %}<bdi dir="ltr" class="num">{{ fmt_money(amt) }} {{ cur }}</bdi>{% if not loop.last %} · {% endif %}{% endfor %}</strong>
       {% elif view.processing %}
         <span class="small"><span class="spinner" aria-hidden="true"></span>{{ t('claim.processing') }}</span>
       {% endif %}
     </div>
     {% if view.ready %}
-      <a class="btn btn-primary btn-lg" href="/claims/{{ claim.id }}/review">{{ t('claim.continue') }}{{ icon('arrow', 'flip') }}</a>
+      <a class="btn btn-primary btn-block" href="/claims/{{ claim.id }}/review">{{ t('claim.continue') }}</a>
     {% elif not docs %}
-      <button class="btn btn-primary btn-lg" type="button" disabled>{{ t('claim.add_first') }}</button>
+      <button class="btn btn-primary btn-block" type="button" data-act="pick">{{ icon('upload') }}<span>{{ t('action.upload') }}</span></button>
     {% elif view.processing %}
-      <button class="btn btn-primary btn-lg" type="button" disabled>{{ t('claim.wait_reading') }}</button>
+      <button class="btn btn-primary btn-block" type="button" disabled>{{ t('claim.wait_reading') }}</button>
     {% else %}
-      <a class="btn btn-primary btn-lg is-muted" href="#claim-status" data-act="show-issues">{{ t('claim.resolve_first', n=view.blocking_issues|length) }}</a>
+      <a class="btn btn-primary btn-block" href="#claim-status" data-act="show-issues">{{ t('claim.resolve_first', n=view.blocking_issues|length) }}</a>
     {% endif %}
   </div>
 </div>

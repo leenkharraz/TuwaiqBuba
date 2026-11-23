@@ -1,19 +1,18 @@
 {% from "partials/macros.html" import icon %}
 <div class="journey-head">
   <div class="journey-inner">
-    <a class="icon-btn back" href="{{ back_href|default('/') }}" aria-label="{{ t('nav.back') }}">{{ icon('arrow', 'flip-back') }}</a>
+    <a class="journey-back" href="{{ back_href|default('/') }}">{{ icon('chevron', 'flip') }}<span>{{ t('nav.back') }}</span></a>
     <p class="journey-title">{{ t('start.title') }}</p>
-    <a class="cancel-link" href="/">{{ t('nav.cancel') }}</a>
+    <a class="journey-cancel" href="/">{{ t('nav.cancel') }}</a>
   </div>
   <nav class="stepper" aria-label="{{ t('step.progress', n=step) }}">
     <ol>
       {% for n in range(1, 5) %}
-      <li class="{% if n < step %}done{% elif n == step %}current{% endif %}" {% if n == step %}aria-current="step"{% endif %}>
-        <span class="step-dot" aria-hidden="true">{% if n < step %}{{ icon('check') }}{% else %}{{ n }}{% endif %}</span>
+      <li class="{% if n < step or step_complete|default(false) %}done{% endif %}{% if n == step %} current{% endif %}" {% if n == step %}aria-current="step"{% endif %}>
+        <span class="step-seg" aria-hidden="true"></span>
         <span class="step-label">{{ t('step.' ~ n) }}</span>
       </li>
       {% endfor %}
     </ol>
-    <div class="step-bar" aria-hidden="true"><span class="p{{ step }}"></span></div>
   </nav>
 </div>

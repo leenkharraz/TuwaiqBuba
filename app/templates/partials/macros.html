@@ -2,6 +2,10 @@
 <svg class="i {{ cls }}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-{{ name }}"/></svg>
 {%- endmacro %}
 
+{% macro illus(cls='') -%}
+<svg class="illus {{ cls }}" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><use href="#illus-docs"/></svg>
+{%- endmacro %}
+
 {% macro slug(key) -%}{{ key|replace(':', '__') }}{%- endmacro %}
 
 {% macro state_chip(fld, t) -%}
@@ -25,12 +29,18 @@
 {% set sid = slug(fld.key) %}
 <div class="field-row status-{{ fld.status }}" id="field-{{ sid }}">
   <div class="field-head">
-    <span class="field-label" id="label-{{ sid }}">{{ label }}</span>
-    {{ state_chip(fld, t) }}
-  </div>
-  <div class="field-value {% if fld.kind in ('amount', 'ident', 'currency', 'date') %}ltr-val{% endif %}"
-       {% if fld.kind in ('amount', 'ident', 'currency', 'date') %}dir="ltr"{% endif %}>
-    {% if fld.value is none %}<span class="muted">—</span>{% else %}{{ display_value(fld) }}{% endif %}
+    {% if editable and claim.status == 'draft' %}
+    <button type="button" class="tile tile-sm tile-btn" data-act="field" data-field="{{ sid }}"
+            aria-label="{{ t('field.edit') }}: {{ label }}">{{ icon('edit') }}</button>
+    {% else %}<span class="tile tile-sm" aria-hidden="true">{{ icon('check') }}</span>{% endif %}
+    <div class="field-main">
+      <span class="field-label" id="label-{{ sid }}">{{ label }}</span>
+      <div class="field-value {% if fld.kind in ('amount', 'ident', 'currency', 'date') %}ltr-val{% endif %}"
+           {% if fld.kind in ('amount', 'ident', 'currency', 'date') %}dir="ltr"{% endif %}>
+        {% if fld.value is none %}<span class="muted">—</span>{% else %}{{ display_value(fld) }}{% endif %}
+      </div>
+    </div>
+    {% if fld.status != 'extracted' %}{{ state_chip(fld, t) }}{% endif %}
   </div>
   {% if fld.note and fld.status == 'needs_review' %}
     <p class="field-note">{{ icon('alert') }}{{ t('field.note.' ~ fld.note) }}{% if fld.extraction_note %} — {{ fld.extraction_note }}{% endif %}</p>
@@ -38,7 +48,7 @@
     <p class="field-note subtle">{{ t('field.note.matched_by_identifier') }}</p>
   {% endif %}
   {% if fld.original_value is not none and fld.status in ('corrected', 'confirmed') and fld.original_value != fld.value %}
-    <p class="field-original">{{ t('field.original', value=fld.original_value) }}</p>
+    <p class="excerpt-box field-original"><span class="excerpt-label">{{ t('fstate.' ~ fld.status) }}</span><span dir="auto">{{ t('field.original', value=fld.original_value) }}</span></p>
   {% endif %}
   <div class="field-sources">
     {% if fld.sources|length == 1 or fld.candidates|length <= 1 %}
