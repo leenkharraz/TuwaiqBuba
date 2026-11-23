@@ -1,0 +1,151 @@
+{
+  "patient_name": {
+    "value": "ريم خالد المطيري",
+    "page": 1,
+    "excerpt": "اسم المريض: ريم خالد المطيري",
+    "ambiguous": null,
+    "note": null
+  },
+  "patient_identifier": {
+    "value": "0042187",
+    "page": 1,
+    "excerpt": "File No. 0042187 / رقم الملف",
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_name": {
+    "value": "مختبر مجمع الواحة الطبي التجريبي / Al Waha Demo Medical Complex - Laboratory",
+    "page": 1,
+    "excerpt": "Al Waha Demo Medical Complex - Laboratory",
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_country": {
+    "value": "Saudi Arabia",
+    "page": 1,
+    "excerpt": "Riyadh, Saudi Arabia",
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_number": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_date": {
+    "value": "2026-11-16",
+    "page": 1,
+    "excerpt": "Collected 2026-11-16 / تاريخ سحب العينة",
+    "ambiguous": null,
+    "note": null
+  },
+  "admission_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "discharge_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_description": {
+    "value": "CBC and CRP results",
+    "page": 1,
+    "excerpt": "WBC 11.8 H ... CRP 18 H mg/L",
+    "ambiguous": null,
+    "note": null
+  },
+  "subtotal": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "tax": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "total": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "currency": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "paid_amount": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_method": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "transaction_reference": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "referenced_invoice_number": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "diagnosis": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "line_items": [],
+  "service_category_hint": "outpatient",
+  "service_category_excerpt": null,
+  "medication_prescribed": null,
+  "implant_or_device_mentioned": null,
+  "readability_note": null,
+  "language": "ar+en",
+  "document_type": "lab_result",
+  "readability": "readable"
+}

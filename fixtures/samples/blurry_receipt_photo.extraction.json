@@ -1,0 +1,151 @@
+{
+  "patient_name": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "patient_identifier": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_name": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_country": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_number": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "admission_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "discharge_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_description": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "subtotal": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "tax": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "total": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "currency": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "paid_amount": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_method": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "transaction_reference": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "referenced_invoice_number": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "diagnosis": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "line_items": [],
+  "service_category_hint": null,
+  "service_category_excerpt": null,
+  "medication_prescribed": null,
+  "implant_or_device_mentioned": null,
+  "readability_note": "The photo is too blurred and dark to read any amounts, dates or names.",
+  "language": null,
+  "document_type": "other",
+  "readability": "unreadable"
+}

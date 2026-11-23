@@ -1,0 +1,284 @@
+{
+  "rule_set_id": "discovery-prototype-document-rules",
+  "version": "0.1.0",
+  "status": "prototype",
+  "source_note": {
+    "ar": "قواعد تجريبية مقتبسة من لقطات التطبيق ونموذج المطالبة المقدَّمين للبرنامج، وليست قواعد بوبا الرسمية الكاملة.",
+    "en": "Prototype rules adapted from the provided app screenshots and claim form. They are not Bupa's complete official rules."
+  },
+  "separate_claims_note": {
+    "ar": "يجب تقديم مطالبة منفصلة لكل نوع من الخدمة (عيادة، دخول) ولكل زيارة منفصلة للعيادات الخارجية أو عند الحجز الداخلي.",
+    "en": "A separate claim is needed for each service type (clinic, admission) and for each separate outpatient visit or inpatient admission."
+  },
+  "service_window_days": 90,
+  "service_window_note": {
+    "ar": "وفق نموذج المطالبة، تُقبل عادة الخدمات التي تمت خلال 90 يوما من تاريخ العلاج ما لم ينص عقدك على خلاف ذلك.",
+    "en": "Per the claim form, services are usually accepted within 90 days of treatment unless your contract states otherwise."
+  },
+  "categories": [
+    {
+      "id": "outpatient",
+      "label": { "ar": "غير ذلك / عيادات خارجية", "en": "Other / outpatient" },
+      "reference": "App screenshot 05 (غير ذلك / عيادات خارجية); claim form section D, Outpatient",
+      "field_checks": ["itemized_lines"],
+      "requirements": [
+        {
+          "id": "detailed_invoice",
+          "when": "always",
+          "doc_types": ["invoice"],
+          "label": {
+            "ar": "فاتورة رسمية مبين بها التخصص والخدمات الطبية والتشخيص والتكلفة لكل خدمة مقدمة",
+            "en": "Official invoice showing the specialty, medical services, diagnosis and the cost of each service"
+          }
+        },
+        {
+          "id": "proof_of_payment",
+          "when": "per_invoice",
+          "doc_types": ["payment_receipt"],
+          "label": { "ar": "إثبات السداد", "en": "Proof of payment" }
+        },
+        {
+          "id": "lab_results",
+          "when": "if_triggered",
+          "doc_types": ["lab_result"],
+          "trigger": { "line_categories": ["lab_test"] },
+          "label": { "ar": "نتائج التحاليل المخبرية (إن تمت)", "en": "Laboratory results (if tests were performed)" }
+        },
+        {
+          "id": "imaging_results",
+          "when": "if_triggered",
+          "doc_types": ["imaging_result"],
+          "trigger": { "line_categories": ["imaging"] },
+          "label": { "ar": "نتائج التصوير التشخيصي (إن تمت)", "en": "Imaging results (if imaging was performed)" }
+        },
+        {
+          "id": "prescription_with_diagnosis",
+          "when": "if_triggered",
+          "doc_types": ["prescription"],
+          "requires_field": "diagnosis",
+          "trigger": { "line_categories": ["medication"], "flags": ["medication_prescribed"] },
+          "label": {
+            "ar": "وصفة الطبيب ذاكرا التشخيص (في حالة وصف أدوية)",
+            "en": "Doctor's prescription mentioning the diagnosis (if medication was prescribed)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dental",
+      "label": { "ar": "طب الأسنان", "en": "Dental" },
+      "reference": "App screenshot 01 (طب الأسنان); claim form section D, Dental",
+      "field_checks": ["itemized_lines", "tooth_numbers"],
+      "requirements": [
+        {
+          "id": "detailed_invoice",
+          "when": "always",
+          "doc_types": ["invoice"],
+          "label": {
+            "ar": "فاتورة رسمية لتفصيل إجراء (إجراءات) الأسنان، مبين بها رقم السن والتكلفة لكل إجراء",
+            "en": "Official invoice itemising the dental procedure(s) with tooth number and cost for each procedure"
+          }
+        },
+        {
+          "id": "proof_of_payment",
+          "when": "per_invoice",
+          "doc_types": ["payment_receipt"],
+          "label": { "ar": "إثبات السداد", "en": "Proof of payment" }
+        },
+        {
+          "id": "dental_imaging",
+          "when": "if_available",
+          "doc_types": ["imaging_result"],
+          "label": {
+            "ar": "أشعة بانورامية / أشعة سينية الجانبية (إن أمكن)",
+            "en": "Panoramic x-ray / bite-wing x-ray (if available)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inpatient",
+      "label": { "ar": "تنويم بالمستشفى والجراحة", "en": "Hospitalisation / surgery" },
+      "reference": "App screenshot 04 (تنويم بالمستشفى و الجراحة); claim form section D, Inpatient",
+      "field_checks": ["itemized_lines"],
+      "requirements": [
+        {
+          "id": "detailed_invoice",
+          "when": "always",
+          "doc_types": ["invoice"],
+          "label": {
+            "ar": "فاتورة رسمية بتفصيل التكلفة لكل خدمة",
+            "en": "Official invoice with the cost break-up of each service"
+          }
+        },
+        {
+          "id": "proof_of_payment",
+          "when": "per_invoice",
+          "doc_types": ["payment_receipt"],
+          "label": { "ar": "إثبات السداد", "en": "Proof of payment" }
+        },
+        {
+          "id": "discharge_report",
+          "when": "always",
+          "doc_types": ["medical_report"],
+          "label": { "ar": "تقرير خروج طبي مفصل", "en": "Detailed medical discharge report" }
+        },
+        {
+          "id": "imaging_results",
+          "when": "if_triggered",
+          "doc_types": ["imaging_result"],
+          "trigger": { "line_categories": ["imaging"] },
+          "label": { "ar": "نتائج التصوير التشخيصي (إن تمت)", "en": "Imaging results (if applicable)" }
+        },
+        {
+          "id": "lab_results",
+          "when": "if_triggered",
+          "doc_types": ["lab_result"],
+          "trigger": { "line_categories": ["lab_test"] },
+          "label": { "ar": "نتائج التحاليل المخبرية (إن تمت)", "en": "Laboratory results (if applicable)" }
+        },
+        {
+          "id": "implant_invoice",
+          "when": "if_triggered",
+          "doc_types": ["invoice"],
+          "trigger": { "flags": ["implant_or_device_mentioned"] },
+          "satisfied_by_line_categories": ["implant_or_device"],
+          "label": {
+            "ar": "فاتورة رسمية للعضو البشري أو الجهاز المزروع أو المغروس (الدعامات، والعدسات داخل مقلة العين، والأعضاء، وما إلى ذلك)",
+            "en": "Official invoice for the organ or device transplanted or inserted (stents, IOL, organ, etc.)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "physiotherapy",
+      "label": { "ar": "العلاج الطبيعي والتوحد وعلاج عيوب النطق والتخاطب", "en": "Physiotherapy, autism and speech therapy" },
+      "reference": "App screenshot 05 (partially visible); claim form section D, Physiotherapy, Autism and Speech Therapy",
+      "field_checks": ["itemized_lines"],
+      "requirements": [
+        {
+          "id": "session_invoices",
+          "when": "always",
+          "doc_types": ["invoice"],
+          "label": {
+            "ar": "فواتير رسمية مبين بها نوع وعدد الجلسات والتاريخ وتكلفة كل جلسة",
+            "en": "Official invoices showing the type and number of sessions, dates and the cost of each session"
+          }
+        },
+        {
+          "id": "proof_of_payment",
+          "when": "per_invoice",
+          "doc_types": ["payment_receipt"],
+          "label": { "ar": "إثبات السداد", "en": "Proof of payment" }
+        },
+        {
+          "id": "diagnostic_report_plan",
+          "when": "always",
+          "doc_types": ["medical_report"],
+          "label": {
+            "ar": "تقرير طبي تشخيصي وخطة علاج من مزود خدمة مسجل بوزارة الصحة بالتخصص المناسب",
+            "en": "Diagnostic medical report and treatment plan from an MOH-registered provider in the relevant specialty"
+          }
+        },
+        {
+          "id": "attendance_and_progress",
+          "when": "reminder",
+          "doc_types": [],
+          "label": {
+            "ar": "جدول حضور الجلسات وتقرير متابعة محدث بعد الجلسات",
+            "en": "Session attendance chart and an updated progress report after the sessions"
+          }
+        }
+      ]
+    },
+    {
+      "id": "optical",
+      "label": { "ar": "النظر", "en": "Optical" },
+      "reference": "Claim form section D, Optical (not shown in the app screenshots)",
+      "field_checks": ["itemized_lines"],
+      "requirements": [
+        {
+          "id": "optical_invoice",
+          "when": "always",
+          "doc_types": ["invoice"],
+          "label": {
+            "ar": "فاتورة رسمية تحدد تكلفة العدسة وتكلفة الإطار",
+            "en": "Official invoice specifying the cost of lenses and of the frame separately"
+          }
+        },
+        {
+          "id": "proof_of_payment",
+          "when": "per_invoice",
+          "doc_types": ["payment_receipt"],
+          "label": { "ar": "إثبات السداد", "en": "Proof of payment" }
+        },
+        {
+          "id": "eye_test",
+          "when": "always",
+          "doc_types": ["medical_report"],
+          "label": {
+            "ar": "فحص للعين أصلي من مقدمي بوبا العربية أو من طبيب العيون",
+            "en": "Original eye test from a network provider or an ophthalmologist"
+          }
+        }
+      ]
+    },
+    {
+      "id": "medication",
+      "label": { "ar": "الأدوية", "en": "Medication" },
+      "reference": "Claim form section D, Medication (not shown in the app screenshots)",
+      "field_checks": ["itemized_lines"],
+      "requirements": [
+        {
+          "id": "medication_invoice",
+          "when": "always",
+          "doc_types": ["invoice"],
+          "label": {
+            "ar": "فاتورة رسمية تفصل اسم الدواء وتكلفته",
+            "en": "Official invoice detailing each medication and its cost"
+          }
+        },
+        {
+          "id": "proof_of_payment",
+          "when": "per_invoice",
+          "doc_types": ["payment_receipt"],
+          "label": { "ar": "إثبات السداد", "en": "Proof of payment" }
+        },
+        {
+          "id": "prescription_with_diagnosis",
+          "when": "always",
+          "doc_types": ["prescription"],
+          "requires_field": "diagnosis",
+          "label": { "ar": "وصفة الطبيب مع توضيح التشخيص", "en": "Doctor's prescription mentioning the diagnosis" }
+        }
+      ]
+    }
+  ],
+  "common_requirements": [
+    {
+      "id": "detailed_invoice",
+      "when": "always",
+      "doc_types": ["invoice"],
+      "label": { "ar": "فاتورة رسمية مفصلة", "en": "Detailed official invoice" }
+    },
+    {
+      "id": "proof_of_payment",
+      "when": "per_invoice",
+      "doc_types": ["payment_receipt"],
+      "label": { "ar": "إثبات السداد", "en": "Proof of payment" }
+    }
+  ],
+  "location_requirements": {
+    "international": [
+      {
+        "id": "travel_proof",
+        "when": "reminder",
+        "doc_types": [],
+        "label": {
+          "ar": "للمطالبات من خارج المملكة: نسخة من جواز السفر توضح تاريخ الدخول والخروج أو أي إثبات آخر",
+          "en": "For treatment outside KSA: a passport copy showing exit and re-entry dates, or other proof"
+        }
+      }
+    ]
+  }
+}

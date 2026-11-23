@@ -1,0 +1,182 @@
+{
+  "patient_name": {
+    "value": "ريم خالد المطيري",
+    "page": 1,
+    "excerpt": "اسم المريض: ريم خالد المطيري",
+    "ambiguous": null,
+    "note": null
+  },
+  "patient_identifier": {
+    "value": "0042187",
+    "page": 1,
+    "excerpt": "File No. 0042187 / رقم الملف",
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_name": {
+    "value": "مجمع الواحة الطبي التجريبي / Al Waha Demo Medical Complex",
+    "page": 1,
+    "excerpt": "مجمع الواحة الطبي التجريبي — Al Waha Demo Medical Complex",
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_country": {
+    "value": "Saudi Arabia",
+    "page": 1,
+    "excerpt": "Riyadh, Saudi Arabia / الرياض، المملكة العربية السعودية",
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_number": {
+    "value": "INV-24-10871",
+    "page": 1,
+    "excerpt": "Invoice No. INV-24-10871 / رقم الفاتورة",
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_date": {
+    "value": "2026-11-16",
+    "page": 1,
+    "excerpt": "Invoice Date 2026-11-16 / تاريخ الفاتورة",
+    "ambiguous": null,
+    "note": null
+  },
+  "service_date": {
+    "value": "2026-11-16",
+    "page": 1,
+    "excerpt": "Visit Date 2026-11-16 / تاريخ الزيارة",
+    "ambiguous": null,
+    "note": null
+  },
+  "admission_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "discharge_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_description": {
+    "value": "Internal Medicine consultation with laboratory tests",
+    "page": 1,
+    "excerpt": "العيادة: الباطنية — Internal Medicine",
+    "ambiguous": null,
+    "note": null
+  },
+  "subtotal": {
+    "value": "500.00",
+    "page": 1,
+    "excerpt": "Subtotal 500.00 المجموع قبل الضريبة",
+    "ambiguous": null,
+    "note": null
+  },
+  "tax": {
+    "value": "75.00",
+    "page": 1,
+    "excerpt": "VAT 15% 75.00",
+    "ambiguous": null,
+    "note": null
+  },
+  "total": {
+    "value": "575.00",
+    "page": 1,
+    "excerpt": "Total (SAR) 575.00 الإجمالي - ر.س",
+    "ambiguous": null,
+    "note": null
+  },
+  "currency": {
+    "value": "SAR",
+    "page": 1,
+    "excerpt": "Amount (SAR) / المبلغ المستحق: 575.00 ريال سعودي",
+    "ambiguous": null,
+    "note": null
+  },
+  "paid_amount": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_method": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "transaction_reference": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "referenced_invoice_number": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "diagnosis": {
+    "value": "Acute pharyngitis (J02.9)",
+    "page": 1,
+    "excerpt": "Diagnosis: Acute pharyngitis (J02.9) / التشخيص",
+    "ambiguous": null,
+    "note": null
+  },
+  "line_items": [
+    {
+      "description": "كشفية استشاري باطنية — Consultant consultation",
+      "category": "consultation",
+      "code": null,
+      "tooth_number": null,
+      "quantity": "1",
+      "amount": "300.00",
+      "page": 1,
+      "excerpt": "كشفية استشاري باطنية 300.00"
+    },
+    {
+      "description": "تحليل صورة دم كاملة CBC",
+      "category": "lab_test",
+      "code": "CBC",
+      "tooth_number": null,
+      "quantity": "1",
+      "amount": "120.00",
+      "page": 1,
+      "excerpt": "تحليل صورة دم كاملة CBC 120.00"
+    },
+    {
+      "description": "تحليل البروتين التفاعلي CRP",
+      "category": "lab_test",
+      "code": "CRP",
+      "tooth_number": null,
+      "quantity": "1",
+      "amount": "80.00",
+      "page": 1,
+      "excerpt": "تحليل البروتين التفاعلي CRP 80.00"
+    }
+  ],
+  "service_category_hint": "outpatient",
+  "service_category_excerpt": "العيادة: الباطنية / Clinic: Internal Medicine",
+  "medication_prescribed": null,
+  "implant_or_device_mentioned": null,
+  "readability_note": null,
+  "language": "ar+en",
+  "document_type": "invoice",
+  "readability": "readable"
+}

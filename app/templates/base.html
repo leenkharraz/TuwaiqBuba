@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#FFFFFF">
+  <title>{% block title %}{{ t('start.title') }}{% endblock %} · {{ t('app.prototype') }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v=1">
+  <link rel="icon" href="{{ url_for('static', path='img/favicon.svg') }}" type="image/svg+xml">
+</head>
+<body class="{% block body_class %}{% endblock %}" data-lang="{{ lang }}" data-max-bytes="{{ max_bytes }}">
+  <a class="skip-link" href="#main">{{ t('skip') }}</a>
+  <script type="application/json" id="ui-strings">{{ js_strings|tojson }}</script>
+  {% include "partials/icons.html" %}
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="wordmark" href="/" aria-label="Bupa · {{ t('app.name') }}">
+        <span class="wordmark-brand" lang="en" dir="ltr">Bupa</span>
+        <span class="wordmark-divider" aria-hidden="true"></span>
+        <span class="wordmark-product">{{ t('app.name') }}</span>
+        <span class="proto-badge">{{ t('app.prototype') }}</span>
+      </a>
+      <a class="lang-switch" href="/lang/{{ 'en' if lang == 'ar' else 'ar' }}?next={{ current_path|urlencode }}"
+         lang="{{ 'en' if lang == 'ar' else 'ar' }}" aria-label="{{ t('lang.switch_label') }}">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-globe"/></svg>
+        <span>{{ t('lang.switch') }}</span>
+      </a>
+    </div>
+  </header>
+
+  {% block journey_header %}{% endblock %}
+
+  <main id="main" class="{% block main_class %}page{% endblock %}" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>{{ t('footer') }}</p>
+    <p class="footer-sub">{{ t('footer.local') }}</p>
+  </footer>
+
+  <div class="toast-region" aria-live="polite" aria-atomic="true" id="toasts"></div>
+  {% block dialogs %}{% endblock %}
+  <script src="{{ url_for('static', path='js/app.js') }}?v=1" defer></script>
+</body>
+</html>

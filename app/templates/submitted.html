@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}{{ t('submitted.title') }}{% endblock %}
+{% block body_class %}page-review{% endblock %}
+{% block content %}
+<section class="card success-hero" role="status">
+  <div class="success-icon" aria-hidden="true">{{ icon('check') }}</div>
+  <h1>{{ t('submitted.title') }}</h1>
+  <p class="muted">{{ t('submitted.sub') }}</p>
+  <p><span class="small muted">{{ t('claim.reference') }}</span><br><bdi dir="ltr" class="ref-box">{{ claim.reference }}</bdi></p>
+  <p class="small muted">{{ t('submitted.at') }}: <bdi dir="ltr">{{ claim.submitted_at.strftime('%d/%m/%Y %H:%M') }} UTC</bdi></p>
+  <div class="button-row no-print">
+    <a class="btn btn-primary" href="/claims/{{ claim.id }}/export.json" download>{{ icon('download') }}<span>{{ t('submitted.download') }}</span></a>
+    <a class="btn btn-secondary" href="/claims/{{ claim.id }}/print" target="_blank" rel="noopener">{{ icon('print') }}<span>{{ t('submitted.print') }}</span></a>
+    <a class="btn btn-text" href="/">{{ t('submitted.new') }}</a>
+  </div>
+</section>
+<section class="card">
+  {% include "partials/summary.html" %}
+</section>
+<section class="card summary-section">
+  <p class="local-note">{{ icon('lock') }}<span>{{ t('review.local_only') }}</span></p>
+  <p class="small muted">{{ t('claim.readiness_note') }}</p>
+</section>
+{% endblock %}

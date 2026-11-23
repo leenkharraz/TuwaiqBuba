@@ -1,0 +1,68 @@
+{% from "partials/macros.html" import icon, slug %}
+<li class="issue sev-{{ 'blocking' if i.blocking else ('ack' if i.acknowledged else i.severity) }}" id="issue-{{ slug(i.key)|replace('.', '_') }}">
+  <span class="issue-icon" aria-hidden="true">{% if i.blocking %}{{ icon('alert') }}{% elif i.acknowledged %}{{ icon('check') }}{% else %}{{ icon('info') }}{% endif %}</span>
+  <div class="issue-body">
+    <p>{{ issue_html(i) }}</p>
+    {% if i.acknowledged %}<p class="small muted">{{ t('ack.done') }}</p>{% endif %}
+    {% if claim.status == 'draft' and (i.actions or i.acknowledgeable) %}
+    <div class="issue-actions">
+      {% if not i.acknowledged %}
+      {% for a in i.actions %}
+        {% if a.kind == 'add_document' %}
+          <button type="button" class="btn btn-secondary btn-sm" data-act="add" data-doc-type="{{ a.doc_type or '' }}">{{ icon('plus') }}<span>{{ t('act.add_document_type', doctype=t('doctype.' ~ a.doc_type)) if a.doc_type else t('act.add_document') }}</span></button>
+        {% elif a.kind == 'retake_photo' %}
+          <button type="button" class="btn btn-secondary btn-sm" data-act="retake" data-doc="{{ a.target }}">{{ icon('camera') }}<span>{{ t('act.retake_photo') }}</span></button>
+        {% elif a.kind == 'replace_document' %}
+          <button type="button" class="btn btn-ghost btn-sm" data-act="replace" data-doc="{{ a.target }}">{{ icon('refresh') }}<span>{{ t('act.replace_document') }}</span></button>
+        {% elif a.kind == 'remove_document' %}
+          <form method="post" action="/documents/{{ a.target }}/remove" data-async data-confirm="{{ t('doc.confirm_remove') }}">
+            <button class="btn btn-ghost btn-sm danger" type="submit">{{ icon('trash') }}<span>{{ t('act.remove_document') }}</span></button></form>
+        {% elif a.kind == 'retry_extraction' %}
+          <form method="post" action="/documents/{{ a.target }}/retry" data-async>
+            <button class="btn btn-secondary btn-sm" type="submit">{{ icon('refresh') }}<span>{{ t('act.retry_extraction') }}</span></button></form>
+        {% elif a.kind in ('review_field', 'resolve_mismatch', 'choose_category', 'choose_location') %}
+          <button type="button" class="btn btn-secondary btn-sm" data-act="field" data-field="{{ slug(a.target) }}">{{ icon('edit') }}<span>{{ t('act.' ~ a.kind) }}</span></button>
+        {% elif a.kind in ('confirm_same_visit', 'confirm_same_patient') %}
+          <form method="post" action="/documents/{{ a.target }}/grouping" data-async>
+            <input type="hidden" name="decision" value="same_visit">
+            <button class="btn btn-secondary btn-sm" type="submit">{{ icon('check') }}<span>{{ t('act.' ~ a.kind) }}</span></button></form>
+        {% elif a.kind == 'split_claim' %}
+          <form method="post" action="/documents/{{ a.target }}/grouping" data-async>
+            <input type="hidden" name="decision" value="separate">
+            <button class="btn btn-primary btn-sm" type="submit">{{ icon('split') }}<span>{{ t('act.split_claim') }}</span></button></form>
+        {% elif a.kind == 'use_invoice_date' and a.value %}
+          <form method="post" action="/claims/{{ claim.id }}/fields" data-async>
+            <input type="hidden" name="field_key" value="{{ a.target }}">
+            <input type="hidden" name="value" value="{{ a.value }}">
+            <input type="hidden" name="kind" value="confirmation">
+            <button class="btn btn-secondary btn-sm" type="submit">{{ icon('check') }}<span>{{ t('act.use_invoice_date', value=a.value) }}</span></button></form>
+        {% elif a.kind == 'link_payment' %}
+          <form method="post" action="/documents/{{ a.target }}/link" data-async class="inline-form">
+            <label class="sr-only" for="link-{{ a.target }}">{{ t('link.choose') }}</label>
+            <select id="link-{{ a.target }}" name="invoice_doc_id" required>
+              <option value="">{{ t('link.choose') }}</option>
+              {% for inv in view.all_invoices.values() if not inv.duplicate_of %}<option value="{{ inv.doc_id }}">{{ inv.label }}</option>{% endfor %}
+              <option value="none">{{ t('link.none') }}</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" type="submit">{{ t('act.link_payment') }}</button></form>
+        {% elif a.kind == 'set_document_type' %}
+          <button type="button" class="btn btn-secondary btn-sm" data-act="doc" data-doc="{{ a.target }}" data-focus="type">{{ icon('edit') }}<span>{{ t('act.set_document_type') }}</span></button>
+        {% elif a.kind == 'review_document' %}
+          <button type="button" class="btn btn-ghost btn-sm" data-act="doc" data-doc="{{ a.target }}">{{ icon('eye') }}<span>{{ t('act.review_document') }}</span></button>
+        {% endif %}
+      {% endfor %}
+      {% endif %}
+      {% if i.acknowledgeable %}
+        <form method="post" action="/claims/{{ claim.id }}/acknowledge" data-async>
+          <input type="hidden" name="issue_key" value="{{ i.key }}">
+          {% if i.acknowledged %}<input type="hidden" name="undo" value="1">
+            <button class="btn-link small" type="submit">{{ t('ack.undo') }}</button>
+          {% else %}
+            <button class="btn btn-ghost btn-sm" type="submit">{{ t('ack.' ~ i.code) }}</button>
+          {% endif %}
+        </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</li>

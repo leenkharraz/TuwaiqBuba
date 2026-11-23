@@ -1,0 +1,151 @@
+{
+  "patient_name": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "patient_identifier": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_name": {
+    "value": "AL WAHA DEMO MEDICAL COMPLEX",
+    "page": 1,
+    "excerpt": "AL WAHA DEMO MEDICAL COMPLEX",
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_country": {
+    "value": "Saudi Arabia",
+    "page": 1,
+    "excerpt": "RIYADH - KSA",
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_number": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "admission_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "discharge_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_description": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "subtotal": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "tax": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "total": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "currency": {
+    "value": "SAR",
+    "page": 1,
+    "excerpt": "AMOUNT SAR 575.00",
+    "ambiguous": null,
+    "note": null
+  },
+  "paid_amount": {
+    "value": "575.00",
+    "page": 1,
+    "excerpt": "AMOUNT SAR 575.00",
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_date": {
+    "value": "2026-11-16",
+    "page": 1,
+    "excerpt": "DATE: 16/11/2026 TIME: 10:42",
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_method": {
+    "value": "mada card",
+    "page": 1,
+    "excerpt": "mada PURCHASE / CARD: **** **** **** 4417",
+    "ambiguous": null,
+    "note": null
+  },
+  "transaction_reference": {
+    "value": "632011458820",
+    "page": 1,
+    "excerpt": "RRN: 632011458820",
+    "ambiguous": null,
+    "note": null
+  },
+  "referenced_invoice_number": {
+    "value": "INV-24-10871",
+    "page": 1,
+    "excerpt": "REF: INV-24-10871",
+    "ambiguous": null,
+    "note": null
+  },
+  "diagnosis": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "line_items": [],
+  "service_category_hint": null,
+  "service_category_excerpt": null,
+  "medication_prescribed": null,
+  "implant_or_device_mentioned": null,
+  "readability_note": null,
+  "language": "en",
+  "document_type": "payment_receipt",
+  "readability": "readable"
+}

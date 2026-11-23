@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block body_class %}page-start{% endblock %}
+{% block content %}
+<section class="start-hero card" aria-labelledby="start-title">
+  <div class="hero-icon" aria-hidden="true">{{ icon('scan-doc') }}</div>
+  <h1 id="start-title">{{ t('start.title') }}</h1>
+  <p class="lede">{{ t('start.message') }}</p>
+  <p class="muted">{{ t('start.sub') }}</p>
+
+  <form id="start-form" class="capture-actions" method="post" action="/claims/start" enctype="multipart/form-data"
+        data-upload-endpoint="/claims/start">
+    <button type="button" class="btn btn-primary btn-xl" data-act="camera">
+      {{ icon('camera') }}<span>{{ t('action.camera') }}</span>
+    </button>
+    <label class="btn btn-secondary btn-xl file-label">
+      {{ icon('upload') }}<span>{{ t('action.upload') }}</span>
+      <input type="file" name="files" multiple class="visually-hidden-input" data-upload-input
+             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+    </label>
+    <noscript><button class="btn btn-secondary" type="submit">{{ t('action.upload') }}</button></noscript>
+  </form>
+  <p class="hint">{{ t('docs.hint', mb=max_mb) }}</p>
+  <div class="upload-feedback" data-upload-feedback aria-live="polite"></div>
+
+  {% if samples_available %}
+  <form method="post" action="/claims/sample" class="sample-start">
+    <button class="btn btn-text" type="submit">{{ icon('sparkle') }}<span>{{ t('action.sample') }}</span></button>
+    <p class="small muted">{{ t('start.sample_note') }}</p>
+  </form>
+  {% endif %}
+</section>
+
+{% if not live_ok %}
+<section class="notice notice-warn" role="status">
+  {{ icon('info') }}
+  <div>
+    <p><strong>{{ t('mode.off') }}</strong></p>
+    <p>{{ t('mode.off_desc') }}</p>
+    <p class="small dev-hint" dir="auto">{{ t('mode.off_dev', missing=live_missing) }}</p>
+  </div>
+</section>
+{% endif %}
+
+<section class="how card" aria-labelledby="how-title">
+  <h2 id="how-title">{{ t('start.how') }}</h2>
+  <ol class="how-steps">
+    <li><span class="how-n" aria-hidden="true">1</span><div><strong>{{ t('start.how1') }}</strong><p>{{ t('start.how1d') }}</p></div></li>
+    <li><span class="how-n" aria-hidden="true">2</span><div><strong>{{ t('start.how2') }}</strong><p>{{ t('start.how2d') }}</p></div></li>
+    <li><span class="how-n" aria-hidden="true">3</span><div><strong>{{ t('start.how3') }}</strong><p>{{ t('start.how3d') }}</p></div></li>
+  </ol>
+  <p class="note-line">{{ icon('info') }}<span>{{ t('start.privacy') }}</span></p>
+</section>
+
+{% if claims %}
+<section class="card drafts" aria-labelledby="drafts-title">
+  <h2 id="drafts-title">{{ t('start.drafts') }}</h2>
+  <ul class="draft-list">
+    {% for c in claims %}
+    <li>
+      <a href="/claims/{{ c.id }}{% if c.status == 'submitted' %}/submitted{% endif %}">
+        <span class="pill {% if c.status == 'submitted' %}pill-ok{% else %}pill-neutral{% endif %}">{{ t('claim.saved') if c.status == 'submitted' else t('claim.draft') }}</span>
+        {% if c.is_sample %}<span class="pill pill-sample">{{ t('claim.sample_badge') }}</span>{% endif %}
+        <span class="draft-meta">{{ t('docs.count', n=c.active_documents|length) }}</span>
+        {% if c.reference %}<bdi dir="ltr" class="mono">{{ c.reference }}</bdi>{% endif %}
+        <span class="draft-date" dir="ltr">{{ c.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+        {{ icon('arrow', 'flip') }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block dialogs %}{% include "partials/camera.html" %}{% endblock %}

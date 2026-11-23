@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}{{ t('review.title') }}{% endblock %}
+{% block body_class %}page-review{% endblock %}
+{% set back_href = '/claims/' ~ claim.id %}
+{% block journey_header %}{% include "partials/journey_header.html" %}{% endblock %}
+{% block content %}
+<section class="card">
+  <h1 class="card-title">{{ t('review.title') }}</h1>
+  <p class="muted">{{ t('review.sub') }}</p>
+  {% if claim.is_sample %}<p class="small"><span class="pill pill-sample">{{ icon('sparkle') }}{{ t('mode.sample') }}</span></p>{% endif %}
+</section>
+
+{% if error == 'blocked' or not view.ready %}
+<section class="error-box" role="alert">
+  <p><strong>{{ t('review.blocked') }}</strong></p>
+</section>
+{% elif error == 'confirm' %}
+<section class="error-box" role="alert"><p>{{ t('review.must_confirm') }}</p></section>
+{% endif %}
+
+<section class="card">
+  {% include "partials/summary.html" %}
+</section>
+
+<section class="card summary-section">
+  <h2>{{ t('review.issues_resolved') }}</h2>
+  {% if resolved %}
+  <ul class="resolved-list">
+    {% for r in resolved %}
+    <li>{{ icon('check') }}<span>
+      {% if r.kind in ('correction', 'confirmation') %}{{ t('review.resolved.' ~ r.kind, field=field_label(r.field)) }}
+      {% elif r.kind == 'ack' %}{{ t('review.resolved.ack', text=issue_text(r.issue)) }}
+      {% else %}{{ t('review.resolved.' ~ r.kind, filename=r.filename) }}{% endif %}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted small">{{ t('review.none') }}</p>{% endif %}
+
+  <h2>{{ t('review.issues_open') }}</h2>
+  {% if view.blocking_issues %}
+  <ul class="open-list">{% for i in view.blocking_issues %}<li>{{ icon('alert') }}<span>{{ issue_html(i) }}</span></li>{% endfor %}</ul>
+  <p><a class="btn btn-secondary btn-sm" href="/claims/{{ claim.id }}#claim-status">{{ t('review.back_fix') }}</a></p>
+  {% else %}<p class="muted small">{{ t('review.none') }}</p>{% endif %}
+
+  {% set notes = view.issues|rejectattr('blocking')|rejectattr('acknowledged')|list %}
+  {% if notes %}
+  <h2>{{ t('review.notes_open') }}</h2>
+  <ul class="open-list">{% for i in notes %}<li>{{ icon('info') }}<span>{{ issue_html(i) }}</span></li>{% endfor %}</ul>
+  {% endif %}
+</section>
+
+<section class="card summary-section">
+  <p class="local-note">{{ icon('lock') }}<span>{{ t('review.local_only') }}</span></p>
+  <p class="small muted">{{ t('claim.readiness_note') }}</p>
+  <form method="post" action="/claims/{{ claim.id }}/submit" data-submit-once class="summary-section">
+    <input type="hidden" name="submit_token" value="{{ claim.submit_token }}">
+    <label class="confirm-box">
+      <input type="checkbox" name="reviewed" value="1" required {% if not view.ready %}disabled{% endif %}>
+      <span>{{ t('review.confirm') }}</span>
+    </label>
+    <button class="btn btn-primary btn-lg" type="submit" {% if not view.ready %}disabled data-blocked{% endif %}>{{ icon('check') }}<span>{{ t('review.submit') }}</span></button>
+    <a class="btn btn-text" href="/claims/{{ claim.id }}">{{ t('review.edit') }}</a>
+  </form>
+</section>
+
+<details class="card json-preview">
+  <summary>{{ t('review.json_preview') }}</summary>
+  <pre>{{ json_preview }}</pre>
+</details>
+{% endblock %}

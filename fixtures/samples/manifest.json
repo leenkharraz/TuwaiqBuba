@@ -1,0 +1,111 @@
+{
+  "note": "Synthetic sample documents for the prototype's sample mode. All people, providers and numbers are fictional. Extraction data is prepared in advance and is only used for these exact files when added from the sample gallery.",
+  "fixtures": [
+    {
+      "id": "outpatient_invoice_ar",
+      "file": "outpatient_invoice_ar.png",
+      "mime_type": "image/png",
+      "starter": true,
+      "title": {
+        "ar": "فاتورة عيادة خارجية (عربي/إنجليزي)",
+        "en": "Outpatient invoice (Arabic/English)"
+      },
+      "purpose": {
+        "ar": "فاتورة مفصلة تتضمن تحاليل مخبرية، بدون إثبات سداد.",
+        "en": "Itemised invoice with lab tests, no proof of payment."
+      }
+    },
+    {
+      "id": "prescription_en",
+      "file": "prescription_en.pdf",
+      "mime_type": "application/pdf",
+      "starter": true,
+      "title": {
+        "ar": "وصفة طبية بالتشخيص (PDF إنجليزي)",
+        "en": "Prescription with diagnosis (English PDF)"
+      },
+      "purpose": {
+        "ar": "الاسم بالإنجليزية ويُطابَق مع الفاتورة برقم الملف.",
+        "en": "Name in English, matched to the Arabic invoice by file number."
+      }
+    },
+    {
+      "id": "payment_receipt_en",
+      "file": "payment_receipt_en.png",
+      "mime_type": "image/png",
+      "title": {
+        "ar": "إيصال دفع بالبطاقة — 575.00",
+        "en": "Card payment slip — 575.00"
+      },
+      "purpose": {
+        "ar": "يُثبت السداد ويُربط بالفاتورة دون أن يزيد الإجمالي.",
+        "en": "Proves payment and links to the invoice without increasing the total."
+      }
+    },
+    {
+      "id": "lab_result_ar",
+      "file": "lab_result_ar.png",
+      "mime_type": "image/png",
+      "title": {
+        "ar": "نتائج المختبر",
+        "en": "Lab results"
+      },
+      "purpose": {
+        "ar": "يستوفي شرط «نتائج التحاليل (إن تمت)».",
+        "en": "Satisfies the conditional “lab results (if performed)” rule."
+      }
+    },
+    {
+      "id": "receipt_mismatch_en",
+      "file": "receipt_mismatch_en.png",
+      "mime_type": "image/png",
+      "title": {
+        "ar": "إيصال بمبلغ مختلف — 500.00",
+        "en": "Receipt with a different amount — 500.00"
+      },
+      "purpose": {
+        "ar": "يُظهر تعارض المبلغ المدفوع مع إجمالي الفاتورة.",
+        "en": "Shows a paid-amount vs invoice-total conflict."
+      }
+    },
+    {
+      "id": "dental_invoice_ar",
+      "file": "dental_invoice_ar.png",
+      "mime_type": "image/png",
+      "title": {
+        "ar": "فاتورة أسنان لزيارة أخرى",
+        "en": "Dental invoice from another visit"
+      },
+      "purpose": {
+        "ar": "خدمة وتاريخ ومقدم مختلف: نقترح مطالبة منفصلة.",
+        "en": "Different service, date and provider: a separate claim is proposed."
+      }
+    },
+    {
+      "id": "blurry_receipt_photo",
+      "file": "blurry_receipt_photo.jpg",
+      "mime_type": "image/jpeg",
+      "title": {
+        "ar": "صورة إيصال غير واضحة",
+        "en": "Blurry receipt photo"
+      },
+      "purpose": {
+        "ar": "مستند غير مقروء يطلب إعادة التصوير أو الاستبدال.",
+        "en": "Unreadable document that asks for a retake or replacement."
+      }
+    },
+    {
+      "id": "invoice_photo_duplicate",
+      "file": "invoice_photo_duplicate.jpg",
+      "mime_type": "image/jpeg",
+      "title": {
+        "ar": "صورة ثانية لنفس الفاتورة",
+        "en": "Second photo of the same invoice"
+      },
+      "purpose": {
+        "ar": "تُكتشف كفاتورة مكررة ولا تُحتسب مرتين.",
+        "en": "Detected as a duplicate invoice and not counted twice."
+      }
+    }
+  ]
+}

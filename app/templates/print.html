@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ t('print.title') }} · {{ claim.reference }}</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v=1">
+</head>
+<body class="print-body" data-max-bytes="{{ max_bytes }}">
+  {% include "partials/icons.html" %}
+  <main class="print-page">
+    <div class="print-head">
+      <div>
+        <p class="wordmark"><span class="wordmark-brand" dir="ltr">Bupa</span><span class="wordmark-divider"></span><span class="wordmark-product">{{ t('app.name') }}</span></p>
+        <h1 class="print-title">{{ t('print.title') }}</h1>
+      </div>
+      <div class="print-meta">
+        <p class="small muted">{{ t('claim.reference') }}</p>
+        <p class="mono" dir="ltr"><strong>{{ claim.reference }}</strong></p>
+        <p class="small muted" dir="ltr">{{ claim.submitted_at.strftime('%d/%m/%Y %H:%M') }} UTC</p>
+      </div>
+    </div>
+    <p class="no-print print-actions"><button class="btn btn-primary btn-sm" type="button" data-print>{{ t('submitted.print') }}</button></p>
+    <div class="print-section">{% include "partials/summary.html" %}</div>
+    <div class="print-section">
+      <h2>{{ t('review.issues_resolved') }}</h2>
+      {% set acks = snap.validation.acknowledged %}
+      {% set corr = snap.corrections|selectattr('active')|list %}
+      {% if acks or corr %}
+      <ul class="resolved-list">
+        {% for c in corr %}<li>{{ t('review.resolved.' ~ c.kind, field=t('field.' ~ c.field_key.split(':')[-1])) }}: <bdi dir="auto">{{ c.member_value }}</bdi>{% if c.original_extracted_value %} ({{ t('field.original', value=c.original_extracted_value) }}){% endif %}</li>{% endfor %}
+        {% for a in acks %}<li>{{ a.message_ar if lang == 'ar' else a.message_en }}</li>{% endfor %}
+      </ul>
+      {% else %}<p class="small muted">{{ t('review.none') }}</p>{% endif %}
+      {% set warns = snap.validation.warnings %}
+      {% if warns %}
+      <h2 class="print-sub">{{ t('review.notes_open') }}</h2>
+      <ul class="open-list">{% for w in warns %}<li>{{ w.message_ar if lang == 'ar' else w.message_en }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+    <p class="small muted">{{ t('print.disclaimer') }}</p>
+    <p class="small muted">{{ t('footer') }}</p>
+  </main>
+  <script src="{{ url_for('static', path='js/app.js') }}?v=1" defer></script>
+</body>
+</html>

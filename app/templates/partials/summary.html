@@ -1,0 +1,57 @@
+{# Shared claim summary. Expects `snap` (export dict) and `t`. #}
+{% from "partials/macros.html" import icon %}
+{% set cl = snap.claim %}
+<section class="summary-section">
+  <h2>{{ t('review.patient_provider') }}</h2>
+  <dl class="kv">
+    <div><dt>{{ t('field.patient_name') }}</dt><dd dir="auto">{{ snap.patient.name.value or '—' }}</dd></div>
+    {% if snap.patient.identifier.value %}<div><dt>{{ t('field.patient_identifier') }}</dt><dd dir="ltr">{{ snap.patient.identifier.value }}</dd></div>{% endif %}
+    <div><dt>{{ t('field.provider_name') }}</dt><dd dir="auto">{{ snap.provider.name.value or '—' }}</dd></div>
+  </dl>
+</section>
+<section class="summary-section">
+  <h2>{{ t('review.service') }}</h2>
+  <dl class="kv">
+    <div><dt>{{ t('field.service_category') }}</dt><dd>{{ t('cat.' ~ snap.service.category.value) if snap.service.category.value else '—' }}</dd></div>
+    <div><dt>{{ t('field.claim_location') }}</dt><dd>{{ t('loc.' ~ snap.service.claim_location.value) if snap.service.claim_location.value else '—' }}</dd></div>
+    <div><dt>{{ t('field.service_date') }}</dt><dd dir="ltr">{{ snap.service.service_date.value or '—' }}</dd></div>
+    {% if snap.service.diagnosis_as_written.value %}<div><dt>{{ t('field.diagnosis') }}</dt><dd dir="auto">{{ snap.service.diagnosis_as_written.value }}</dd></div>{% endif %}
+  </dl>
+</section>
+<section class="summary-section">
+  <h2>{{ t('claim.invoices') }}</h2>
+  <div class="table-wrap">
+  <table class="inv-table">
+    <thead><tr>
+      <th>{{ t('field.invoice_number') }}</th><th>{{ t('field.invoice_date') }}</th>
+      <th>{{ t('field.total') }}</th><th>{{ t('claim.payment') }}</th>
+    </tr></thead>
+    <tbody>
+    {% for inv in snap.invoices %}
+      <tr>
+        <td data-label="{{ t('field.invoice_number') }}"><bdi dir="ltr" class="mono">{{ inv.invoice_number.value or '—' }}</bdi></td>
+        <td data-label="{{ t('field.invoice_date') }}" dir="ltr">{{ inv.invoice_date.value or '—' }}</td>
+        <td data-label="{{ t('field.total') }}"><bdi dir="ltr" class="mono">{{ inv.total.value or '—' }} {{ inv.currency.value or '' }}</bdi></td>
+        <td data-label="{{ t('claim.payment') }}">{{ t('paystatus.' ~ inv.payment_status) }}{% if inv.paid_total %} · <bdi dir="ltr" class="mono">{{ inv.paid_total }}</bdi>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+<section class="summary-section">
+  <h2>{{ t('review.amounts') }}</h2>
+  <dl class="kv">
+    <div><dt>{{ t('claim.total') }}</dt><dd>{% for cur, amt in snap.totals.claimed_by_currency.items() %}<bdi dir="ltr" class="mono">{{ amt }} {{ cur }}</bdi>{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</dd></div>
+    <div><dt>{{ t('claim.paid') }}</dt><dd>{% for cur, amt in snap.totals.paid_by_currency.items() %}<bdi dir="ltr" class="mono">{{ amt }} {{ cur }}</bdi>{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</dd></div>
+  </dl>
+</section>
+<section class="summary-section">
+  <h2>{{ t('review.attachments') }}</h2>
+  <ul class="attach-list">
+    {% for a in snap.attachments %}
+    <li>{{ icon(a.document_type or 'other') }}<span>{{ t('doctype.' ~ (a.document_type or 'none')) }}</span> · <bdi dir="ltr">{{ a.filename }}</bdi>
+      {% if not a.included_in_this_claim %}<span class="pill pill-warn">{{ t('doc.group.excluded') }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>

@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=8
+httpx>=0.27
+# only needed to regenerate the synthetic sample documents
+arabic-reshaper>=3.0
+python-bidi>=0.4

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block body_class %}page-claim{% endblock %}
+{% block main_class %}page page-wide{% endblock %}
+{% block journey_header %}{% include "partials/journey_header.html" %}{% endblock %}
+{% block content %}
+{% if claim.is_sample %}
+<section class="mode-banner mode-sample" role="note">
+  {{ icon('sparkle') }}
+  <div><strong>{{ t('mode.sample') }}</strong><span>{{ t('mode.sample_desc') }}</span></div>
+</section>
+{% elif live_ok %}
+<section class="mode-banner mode-live" role="note">
+  {{ icon('shield') }}
+  <div><strong>{{ t('mode.live') }}</strong><span>{{ t('mode.live_desc') }}</span></div>
+</section>
+{% else %}
+<section class="mode-banner mode-off" role="note">
+  {{ icon('info') }}
+  <div><strong>{{ t('mode.off') }}</strong><span>{{ t('mode.off_desc') }}</span>
+  <span class="small dev-hint">{{ t('mode.off_dev', missing=live_missing) }}</span></div>
+</section>
+{% endif %}
+
+<div id="workspace" data-claim="{{ claim.id }}">
+  {% include "partials/workspace.html" %}
+</div>
+{% endblock %}
+
+{% block dialogs %}
+{% include "partials/camera.html" %}
+<input type="file" id="pick-files" multiple hidden accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+<input type="file" id="pick-replace" hidden accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+<dialog id="source-dialog" class="sheet source-sheet" aria-labelledby="source-title">
+  <div class="sheet-head">
+    <h2 id="source-title">{{ t('source.open') }}</h2>
+    <button type="button" class="icon-btn" data-close-dialog aria-label="{{ t('field.cancel') }}">{{ icon('x') }}</button>
+  </div>
+  <p class="source-name" dir="ltr" data-source-title></p>
+  <div class="source-excerpt" data-source-excerpt-wrap hidden>
+    <p class="small muted">{{ t('source.excerpt') }}</p>
+    <blockquote dir="auto" data-source-excerpt></blockquote>
+  </div>
+  <div class="source-image"><img alt="" data-source-img></div>
+  <a class="btn btn-secondary btn-sm" data-source-open target="_blank" rel="noopener">{{ icon('eye') }}<span>{{ t('source.open_original') }}</span></a>
+</dialog>
+{% endblock %}

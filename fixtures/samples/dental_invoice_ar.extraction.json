@@ -1,0 +1,172 @@
+{
+  "patient_name": {
+    "value": "ريم خالد المطيري",
+    "page": 1,
+    "excerpt": "اسم المريض: ريم خالد المطيري",
+    "ambiguous": null,
+    "note": null
+  },
+  "patient_identifier": {
+    "value": "D-5521",
+    "page": 1,
+    "excerpt": "File No. D-5521 / رقم الملف",
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_name": {
+    "value": "عيادة ابتسامة التجريبية لطب الأسنان / Ibtisama Demo Dental Clinic",
+    "page": 1,
+    "excerpt": "عيادة ابتسامة التجريبية لطب الأسنان — Ibtisama Demo Dental Clinic",
+    "ambiguous": null,
+    "note": null
+  },
+  "provider_country": {
+    "value": "Saudi Arabia",
+    "page": 1,
+    "excerpt": "Jeddah, Saudi Arabia / جدة، المملكة العربية السعودية",
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_number": {
+    "value": "DN-7781",
+    "page": 1,
+    "excerpt": "Invoice No. DN-7781 / رقم الفاتورة",
+    "ambiguous": null,
+    "note": null
+  },
+  "invoice_date": {
+    "value": "2026-11-09",
+    "page": 1,
+    "excerpt": "Invoice Date 2026-11-09",
+    "ambiguous": null,
+    "note": null
+  },
+  "service_date": {
+    "value": "2026-11-09",
+    "page": 1,
+    "excerpt": "Visit Date 2026-11-09 / تاريخ الزيارة",
+    "ambiguous": null,
+    "note": null
+  },
+  "admission_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "discharge_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "service_description": {
+    "value": "Composite filling and periapical x-ray, tooth 36",
+    "page": 1,
+    "excerpt": "حشو تجميلي كومبوزيت - سن رقم 36",
+    "ambiguous": null,
+    "note": null
+  },
+  "subtotal": {
+    "value": "510.00",
+    "page": 1,
+    "excerpt": "Subtotal 510.00",
+    "ambiguous": null,
+    "note": null
+  },
+  "tax": {
+    "value": "76.50",
+    "page": 1,
+    "excerpt": "VAT 15% 76.50",
+    "ambiguous": null,
+    "note": null
+  },
+  "total": {
+    "value": "586.50",
+    "page": 1,
+    "excerpt": "Total (SAR) 586.50",
+    "ambiguous": null,
+    "note": null
+  },
+  "currency": {
+    "value": "SAR",
+    "page": 1,
+    "excerpt": "Amount (SAR)",
+    "ambiguous": null,
+    "note": null
+  },
+  "paid_amount": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_date": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "payment_method": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "transaction_reference": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "referenced_invoice_number": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "diagnosis": {
+    "value": null,
+    "page": null,
+    "excerpt": null,
+    "ambiguous": null,
+    "note": null
+  },
+  "line_items": [
+    {
+      "description": "حشو تجميلي كومبوزيت — Composite filling",
+      "category": "dental_procedure",
+      "code": null,
+      "tooth_number": "36",
+      "quantity": "1",
+      "amount": "450.00",
+      "page": 1,
+      "excerpt": "حشو تجميلي كومبوزيت - سن رقم 36 450.00"
+    },
+    {
+      "description": "أشعة سينية بسيطة — Periapical x-ray",
+      "category": "imaging",
+      "code": null,
+      "tooth_number": "36",
+      "quantity": "1",
+      "amount": "60.00",
+      "page": 1,
+      "excerpt": "أشعة سينية بسيطة - سن رقم 36 60.00"
+    }
+  ],
+  "service_category_hint": "dental",
+  "service_category_excerpt": "Ibtisama Demo Dental Clinic — حشو تجميلي كومبوزيت - سن رقم 36",
+  "medication_prescribed": null,
+  "implant_or_device_mentioned": null,
+  "readability_note": null,
+  "language": "ar+en",
+  "document_type": "invoice",
+  "readability": "readable"
+}
