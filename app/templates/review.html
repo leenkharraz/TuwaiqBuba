@@ -9,7 +9,6 @@
 <header class="page-head">
   <h1>{{ t('review.h1') }}</h1>
   <p class="page-sub">{{ t('review.sub') }}</p>
-  {% if claim.is_sample %}<p><span class="pill pill-sample">{{ icon('sparkle') }}{{ t('mode.sample') }}</span></p>{% endif %}
 </header>
 
 {% if error == 'blocked' or not view.ready %}
@@ -48,16 +47,10 @@
   {% endif %}
 </section>
 
-<details class="card json-preview">
-  <summary>{{ t('review.json_preview') }}</summary>
-  <pre>{{ json_preview }}</pre>
-</details>
-
 <form method="post" action="/claims/{{ claim.id }}/submit" data-submit-once class="submit-form">
   <input type="hidden" name="submit_token" value="{{ claim.submit_token }}">
   <section class="card summary-card">
-    <p class="local-note">{{ icon('lock') }}<span>{{ t('review.local_only') }}</span></p>
-    <p class="small muted">{{ t('claim.readiness_note') }}</p>
+    <p class="small muted">{{ t('track.not_decision') }}</p>
     <label class="confirm-box">
       <input type="checkbox" name="reviewed" value="1" required {% if not view.ready %}disabled{% endif %}>
       <span>{{ t('review.confirm') }}</span>

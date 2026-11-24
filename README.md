@@ -222,3 +222,39 @@ reads only this structure.
   This is not production-ready for real personal health information.
 - Fonts load from Google Fonts, with system Arabic fonts as fallback offline.
 - The 90-day service window from the claim form is shown as a warning only.
+
+---
+
+## Claim tracking and test data
+
+### Load or reset the test data
+
+```bash
+pip install -r requirements.txt                 # adds openpyxl
+python scripts/build_demo_workbook.py           # writes data/Bupa_Prototype_Data.xlsx + data/demo_fixtures/*.pdf
+python -m app.seed import --dry-run             # validate only
+python -m app.seed import                       # atomic import (use --upsert to refresh)
+python -m app.seed verify                       # run the automatic checker on T01–T08 from the actual files
+python -m app.seed reset-demo                   # restore the seeded claims; live app claims are kept
+                                                # (imported claims are test data and never listed to customers)
+```
+
+The workbook, its documents, policy rules, limits and time estimates are **fictional test data** (English
+only). The database schema migrates automatically at start-up (`app/db.py`, schema version 2).
+
+### Screens
+
+- `/` welcome screen (once per browser session) → `/home` insurance home.
+- `قدم مطالبة` → `/claims/new` (the existing upload, extraction and review flow).
+- `حالة المطالبات` → `/claims`: `مطالباتي` (submitted claims, newest first) and `مسوداتي` (drafts).
+- `/claims/{id}/track`: four stages (Submitted, Document Verification, Employee Review, Final Decision).
+  Missing documents pause stage 2 as **Needs Documents**; the member completes them and resubmits under
+  the same claim number. Only an employee approves or rejects. Approved ≠ paid.
+There is no employee dashboard and no public demo page. Claims that reach Under Processing stay there:
+the model keeps the employee-review and final-decision states, and nothing is approved or rejected
+automatically. Imported workbook claims and sample-document claims are excluded from customer lists.
+The synthetic sample-document routes exist only for the automated tests
+(`ENABLE_TEST_FIXTURE_ROUTES=1`, set by `tests/conftest.py`).
+
+The interface opens in English by default (`DEFAULT_LANG=en`); Arabic (RTL) is one tap away, or set
+`DEFAULT_LANG=ar`.

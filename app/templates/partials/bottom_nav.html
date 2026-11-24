@@ -1,0 +1,21 @@
+{% from "partials/macros.html" import icon %}
+<nav class="bottom-nav" aria-label="{{ t('app.name') }}">
+  <ul>
+    <li><button type="button" class="tab" data-info-dialog="unavailable-dialog">{{ icon('tab-home') }}<span>{{ t('nav.tab_home') }}</span></button></li>
+    <li><a class="tab is-active" href="/home" aria-current="page">{{ icon('tab-insurance') }}<span>{{ t('nav.tab_insurance') }}</span></a></li>
+    <li><button type="button" class="tab" data-info-dialog="unavailable-dialog">{{ icon('tab-health') }}<span>{{ t('nav.tab_health') }}</span></button></li>
+    <li><button type="button" class="tab" data-info-dialog="unavailable-dialog">{{ icon('tab-products') }}<span>{{ t('nav.tab_products') }}</span></button></li>
+    <li><button type="button" class="tab" data-info-dialog="unavailable-dialog">{{ icon('tab-settings') }}<span>{{ t('nav.tab_settings') }}</span></button></li>
+  </ul>
+</nav>
+<dialog id="unavailable-dialog" class="sheet info-sheet" aria-labelledby="unavailable-title">
+  <div class="sheet-head">
+    <h2 id="unavailable-title">{{ t('home.unavailable_title') }}</h2>
+    <button type="button" class="icon-btn" data-close-dialog aria-label="{{ t('home.close') }}">{{ icon('x') }}</button>
+  </div>
+  <p class="page-sub">{{ t('home.unavailable_body') }}</p>
+  <div class="sheet-actions">
+    <a class="btn btn-primary btn-block" href="/claims/new">{{ t('home.submit_claim') }}</a>
+    <a class="btn btn-tertiary btn-block" href="/claims">{{ t('home.claims_status') }}</a>
+  </div>
+</dialog>

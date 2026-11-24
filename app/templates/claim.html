@@ -4,25 +4,11 @@
 {% block main_class %}page page-wide{% endblock %}
 {% block journey_header %}{% include "partials/journey_header.html" %}{% endblock %}
 {% block content %}
-{% if claim.is_sample %}
-<section class="hero-card mode-banner mode-sample" role="note">
-  <div class="hero-text">
-    <p class="hero-eyebrow">{{ icon('sparkle') }}{{ t('claim.sample_badge') }}</p>
-    <h2>{{ t('mode.sample') }}</h2>
-    <p>{{ t('mode.sample_desc') }}</p>
-  </div>
-  {{ illus('hero-illus') }}
-</section>
-{% elif live_ok %}
-<section class="mode-banner mode-live" role="note">
-  {{ icon('shield') }}
-  <div><strong>{{ t('mode.live') }}</strong><span>{{ t('mode.live_desc') }}</span></div>
-</section>
-{% else %}
-<section class="mode-banner mode-off" role="note">
-  {{ icon('alert') }}
-  <div><strong>{{ t('mode.off') }}</strong><span>{{ t('mode.off_desc') }}</span>
-  <span class="small dev-hint">{{ t('mode.off_dev', missing=live_missing) }}</span></div>
+{% if claim.stage %}
+<section class="alert alert-warn" role="status">
+  <span class="alert-icon">{{ icon('alert') }}</span>
+  <div><p class="alert-title">{{ t('ws.completion_title') }} · <bdi dir="ltr">{{ claim.claim_number }}</bdi></p>
+    <p>{{ t('ws.completion_body') }}</p></div>
 </section>
 {% endif %}
 
@@ -35,22 +21,4 @@
 {% include "partials/camera.html" %}
 <input type="file" id="pick-files" multiple hidden accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
 <input type="file" id="pick-replace" hidden accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
-<dialog id="source-dialog" class="sheet source-sheet" aria-labelledby="source-title">
-  <div class="sheet-head">
-    <h2 id="source-title">{{ t('source.open') }}</h2>
-    <button type="button" class="icon-btn" data-close-dialog aria-label="{{ t('field.cancel') }}">{{ icon('x') }}</button>
-  </div>
-  <div class="source-doc">
-    <p class="source-name"><span class="tile tile-sm">{{ icon('file') }}</span><bdi dir="ltr" data-source-title></bdi></p>
-    <div class="excerpt-box source-excerpt" data-source-excerpt-wrap hidden>
-      <p class="excerpt-label">{{ t('source.excerpt') }}</p>
-      <blockquote dir="auto" data-source-excerpt></blockquote>
-    </div>
-    <div class="source-image"><img alt="" data-source-img></div>
-  </div>
-  <div class="sheet-actions">
-    <a class="btn btn-secondary btn-block" data-source-open target="_blank" rel="noopener">{{ icon('eye') }}<span>{{ t('source.open_original') }}</span></a>
-    <button type="button" class="btn btn-tertiary btn-block" data-close-dialog>{{ t('nav.back') }}</button>
-  </div>
-</dialog>
 {% endblock %}

@@ -8,11 +8,15 @@ os.environ["PROTOTYPE_SKIP_DOTENV"] = "1"
 os.environ["DATA_DIR"] = _TMP
 os.environ["GEMINI_API_KEY"] = ""
 os.environ["GEMINI_MODEL"] = "test-model"
+# The UI tests below assert the Arabic wording; the English default has its own test.
+os.environ["DEFAULT_LANG"] = "ar"
+# Synthetic sample-document routes are disabled on the website and enabled only for this test-suite.
+os.environ["ENABLE_TEST_FIXTURE_ROUTES"] = "1"
 
 import pytest  # noqa: E402
 from PIL import Image  # noqa: E402
 
-from app import services  # noqa: E402
+from app import lifecycle, services  # noqa: E402
 from app.db import Base, engine  # noqa: E402
 
 
@@ -22,6 +26,7 @@ def fresh_db():
     Base.metadata.create_all(engine)
     services.extractor_factory = None
     services.run_inline = True
+    lifecycle.run_inline = True
     yield
     services.extractor_factory = None
 

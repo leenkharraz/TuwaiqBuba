@@ -66,6 +66,16 @@ class Settings:
     data_dir: Path
     secure_cookies: bool
     extraction_workers: int
+    # --- demo / lifecycle settings (fictional data only; the role switch is not production auth)
+    demo_mode: bool = True
+    default_lang: str = "en"
+    # Synthetic sample-document routes exist only for the automated test-suite.
+    test_fixture_routes: bool = False
+    demo_default_member: str = "MEM-DEMO-01"
+    splash_delay_ms: int = 1400
+    initial_check_target_minutes: int = 3
+    show_initial_check_estimate: bool = True
+    demo_workbook: Path = BASE_DIR / "data" / "Bupa_Prototype_Data.xlsx"
 
     @property
     def max_upload_bytes(self) -> int:
@@ -116,6 +126,14 @@ def load_settings() -> Settings:
         data_dir=data_dir,
         secure_cookies=_bool("SECURE_COOKIES", False),
         extraction_workers=max(1, _int("EXTRACTION_WORKERS", 3)),
+        demo_mode=_bool("DEMO_MODE", True),
+        test_fixture_routes=_bool("ENABLE_TEST_FIXTURE_ROUTES", False),
+        default_lang=os.environ.get("DEFAULT_LANG", "en").strip().lower() if os.environ.get("DEFAULT_LANG", "en").strip().lower() in ("ar", "en") else "en",
+        demo_default_member=os.environ.get("DEMO_DEFAULT_MEMBER", "").strip() or "MEM-DEMO-01",
+        splash_delay_ms=max(0, _int("SPLASH_DELAY_MS", 1400)),
+        initial_check_target_minutes=max(1, _int("INITIAL_CHECK_TARGET_MINUTES", 3)),
+        show_initial_check_estimate=_bool("SHOW_INITIAL_CHECK_ESTIMATE", True),
+        demo_workbook=Path(os.environ.get("DEMO_WORKBOOK", "").strip() or str(data_dir / "Bupa_Prototype_Data.xlsx")),
     )
 
 

@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -39,6 +39,31 @@ class Claim(Base):
     snapshot_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    # ---- lifecycle (migration 2). A draft has stage=None; submission sets stage="submitted".
+    claim_number: Mapped[Optional[str]] = mapped_column(String(40), unique=True, nullable=True)
+    member_id: Mapped[Optional[str]] = mapped_column(String(40), index=True, nullable=True)
+    policy_id: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    claimed_halalas: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
+    stage: Mapped[Optional[str]] = mapped_column(String(20), index=True, nullable=True)
+    action_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    decision: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # approved | rejected
+    approved_halalas: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    decision_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    payout_status: Mapped[str] = mapped_column(String(10), default="unpaid")  # unpaid | paid
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    paid_halalas: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    check_round: Mapped[int] = mapped_column(Integer, default=0)
+    review_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    review_due_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    review_paused_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_update_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    origin: Mapped[str] = mapped_column(String(10), default="app")  # app | seed
+    scenario: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
 
     documents: Mapped[List["Document"]] = relationship(
         back_populates="claim", order_by="Document.position", cascade="all, delete-orphan"
@@ -128,3 +153,154 @@ class Acknowledgement(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     claim: Mapped[Claim] = relationship(back_populates="acknowledgements")
+
+
+# ====================================================================== lifecycle & reference data
+# Reference rows (members, policies, rules, SLA) come from the demo workbook importer.
+# They are synthetic test data, not Bupa policy terms.
+
+
+class Member(Base):
+    __tablename__ = "members"
+
+    member_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    display_name_ar: Mapped[str] = mapped_column(String(120))
+    member_identity: Mapped[str] = mapped_column(String(60))
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Policy(Base):
+    __tablename__ = "policies"
+
+    policy_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.member_id"), index=True)
+    valid_from: Mapped[date] = mapped_column(Date)
+    valid_to: Mapped[date] = mapped_column(Date)
+    version: Mapped[str] = mapped_column(String(40))
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class PolicyRule(Base):
+    __tablename__ = "policy_rules"
+
+    rule_id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    policy_id: Mapped[str] = mapped_column(ForeignKey("policies.policy_id"), index=True)
+    category: Mapped[str] = mapped_column(String(20))
+    limit_halalas: Mapped[int] = mapped_column(Integer)
+    member_share_rate: Mapped[str] = mapped_column(String(12))  # Decimal as text
+    invoice_required: Mapped[bool] = mapped_column(Boolean, default=True)
+    payment_proof_required: Mapped[bool] = mapped_column(Boolean, default=True)
+    excluded_service_codes: Mapped[str] = mapped_column(String(400), default="")
+    version: Mapped[str] = mapped_column(String(40))
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class SlaTarget(Base):
+    __tablename__ = "sla_targets"
+
+    category: Mapped[str] = mapped_column(String(20), primary_key=True)
+    category_ar: Mapped[str] = mapped_column(String(60))
+    initial_check_target_minutes: Mapped[int] = mapped_column(Integer)
+    employee_estimate_hours: Mapped[int] = mapped_column(Integer)
+    clock_basis: Mapped[str] = mapped_column(String(20))
+    estimate_label_ar: Mapped[str] = mapped_column(String(60))
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class InvoiceRecord(Base):
+    """Normalised invoice history used for duplicate checks (seeded rows and extracted invoices)."""
+
+    __tablename__ = "invoice_records"
+
+    id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    claim_id: Mapped[str] = mapped_column(ForeignKey("claims.id"), index=True)
+    document_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    member_id: Mapped[Optional[str]] = mapped_column(String(40), index=True, nullable=True)
+    provider_id: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    provider_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    invoice_number: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    invoice_number_norm: Mapped[Optional[str]] = mapped_column(String(80), index=True, nullable=True)
+    service_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    total_halalas: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
+    extracted_member_identity: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    service_code: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    file_sha256: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)
+    source: Mapped[str] = mapped_column(String(12), default="extracted")  # seed | extracted
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class CheckResult(Base):
+    __tablename__ = "check_results"
+
+    id: Mapped[str] = mapped_column(String(60), primary_key=True, default=new_id)
+    claim_id: Mapped[str] = mapped_column(ForeignKey("claims.id"), index=True)
+    run_id: Mapped[Optional[str]] = mapped_column(String(60), index=True, nullable=True)
+    check_type: Mapped[str] = mapped_column(String(40))
+    result: Mapped[str] = mapped_column(String(16))  # pass | fail | manual_review
+    reason_code: Mapped[str] = mapped_column(String(60))
+    message_ar: Mapped[str] = mapped_column(Text)
+    message_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    evidence_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    evidence_ref: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    related_claim_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    rule_version: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    origin: Mapped[str] = mapped_column(String(10), default="app")
+
+
+class StatusEvent(Base):
+    """Append-only claim history. Rows are never updated or deleted by the application."""
+
+    __tablename__ = "status_events"
+    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_status_event_idem"),)
+
+    id: Mapped[str] = mapped_column(String(60), primary_key=True, default=new_id)
+    claim_id: Mapped[str] = mapped_column(ForeignKey("claims.id"), index=True)
+    stage: Mapped[str] = mapped_column(String(20))  # submitted | auto_check | employee_review | decided
+    event_type: Mapped[str] = mapped_column(String(40))
+    actor_role: Mapped[str] = mapped_column(String(12))  # member | system | employee
+    actor_id: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    data_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    origin: Mapped[str] = mapped_column(String(10), default="app")
+
+
+class CheckJob(Base):
+    """One automatic-check run per claim and round. Safe to resume after a restart."""
+
+    __tablename__ = "check_jobs"
+    __table_args__ = (UniqueConstraint("claim_id", "round", name="uq_check_job_round"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    claim_id: Mapped[str] = mapped_column(ForeignKey("claims.id"), index=True)
+    round: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(12), default="queued")  # queued | running | done | failed
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class SessionLink(Base):
+    """Demo sign-in: which synthetic member (or employee role) a browser session acts as.
+
+    This is a local demonstration switch, not production authentication.
+    """
+
+    __tablename__ = "session_links"
+
+    sid: Mapped[str] = mapped_column(String(64), primary_key=True)
+    member_id: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    role: Mapped[str] = mapped_column(String(12), default="member")  # member | employee
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class SchemaVersion(Base):
+    __tablename__ = "schema_version"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version: Mapped[int] = mapped_column(Integer)

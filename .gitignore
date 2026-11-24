@@ -26,3 +26,6 @@ references/
 # Local test artefacts
 *.db
 *.sqlite
+
+# Brand artwork cropped from the supplied reference screenshots (third-party; kept local)
+app/static/img/brand/

@@ -4,7 +4,7 @@
   <div class="issue-body">
     <p>{{ issue_html(i) }}</p>
     {% if i.acknowledged %}<p class="small muted">{{ t('ack.done') }}</p>{% endif %}
-    {% if claim.status == 'draft' and (i.actions or i.acknowledgeable) %}
+    {% if can_edit and (i.actions or i.acknowledgeable) %}
     <div class="issue-actions">
       {% if not i.acknowledged %}
       {% for a in i.actions %}
@@ -20,8 +20,12 @@
         {% elif a.kind == 'retry_extraction' %}
           <form method="post" action="/documents/{{ a.target }}/retry" data-async>
             <button class="btn btn-secondary btn-sm" type="submit">{{ icon('refresh') }}<span>{{ t('act.retry_extraction') }}</span></button></form>
-        {% elif a.kind in ('review_field', 'resolve_mismatch', 'choose_category', 'choose_location') %}
+        {% elif a.kind in ('review_field', 'resolve_mismatch', 'choose_category', 'choose_location') and a.target in editable_keys %}
           <button type="button" class="btn btn-secondary btn-sm" data-act="field" data-field="{{ slug(a.target) }}">{{ icon('edit') }}<span>{{ t('act.' ~ a.kind) }}</span></button>
+        {% elif a.kind in ('review_field', 'resolve_mismatch') and a.target and a.target.startswith('doc:') %}
+          <button type="button" class="btn btn-secondary btn-sm" data-act="replace" data-doc="{{ a.target.split(':')[1] }}">{{ icon('refresh') }}<span>{{ t('act.replace_for_field') }}</span></button>
+        {% elif a.kind in ('review_field', 'resolve_mismatch') %}
+          <button type="button" class="btn btn-secondary btn-sm" data-act="add">{{ icon('refresh') }}<span>{{ t('act.replace_for_field') }}</span></button>
         {% elif a.kind in ('confirm_same_visit', 'confirm_same_patient') %}
           <form method="post" action="/documents/{{ a.target }}/grouping" data-async>
             <input type="hidden" name="decision" value="same_visit">

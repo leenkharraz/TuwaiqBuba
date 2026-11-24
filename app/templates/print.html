@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ t('print.title') }} · {{ claim.reference }}</title>
+  <title>{{ t('review.title') }} · {{ claim.reference }}</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v={{ asset_v }}">
 </head>
 <body class="print-body" data-max-bytes="{{ max_bytes }}">
   {% include "partials/icons.html" %}
@@ -14,7 +14,6 @@
       <div>
         <p class="wordmark"><span class="wordmark-brand" dir="ltr">Bupa Arabia</span><span class="wordmark-divider"></span><span class="wordmark-product">{{ t('app.claims') }}</span></p>
         <h1 class="print-title">{{ t('review.title') }}</h1>
-        <p class="page-sub">{{ t('print.title') }}</p>
       </div>
       <div class="print-meta">
         <p class="small muted">{{ t('claim.reference') }}</p>
@@ -40,9 +39,7 @@
       <ul class="open-list">{% for w in warns %}<li>{{ w.message_ar if lang == 'ar' else w.message_en }}</li>{% endfor %}</ul>
       {% endif %}
     </section>
-    <p class="small muted">{{ t('print.disclaimer') }}</p>
-    <p class="small muted">{{ t('footer') }}</p>
   </main>
-  <script src="{{ url_for('static', path='js/app.js') }}?v=1" defer></script>
+  <script src="{{ url_for('static', path='js/app.js') }}?v={{ asset_v }}" defer></script>
 </body>
 </html>

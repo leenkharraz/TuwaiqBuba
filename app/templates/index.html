@@ -1,83 +1,33 @@
 {% extends "base.html" %}
 {% from "partials/macros.html" import icon, illus %}
+{% block title %}{{ t('start.h1') }}{% endblock %}
 {% block body_class %}page-start{% endblock %}
+{% set back_href = '/home' %}
 {% block journey_header %}{% include "partials/journey_header.html" %}{% endblock %}
 {% block content %}
-<header class="page-head">
-  <h1 id="start-title">{{ t('start.h1') }}</h1>
-  <p class="page-sub">{{ t('start.h1_sub') }}</p>
+<header class="page-head upload-head">
+  <div class="upload-head-text">
+    <h1 id="start-title">{{ t('start.h1') }}</h1>
+    <p class="page-sub">{{ t('start.h1_sub') }}</p>
+  </div>
+  {{ illus('upload-illus') }}
 </header>
 
-<section class="hero-card" aria-labelledby="hero-title">
-  <div class="hero-text">
-    <h2 id="hero-title">{{ t('start.hero_title') }}</h2>
-    <p>{{ t('start.hero_body') }}</p>
-  </div>
-  {{ illus('hero-illus') }}
-</section>
-
-{% if not live_ok %}
-<section class="alert alert-warn" role="status">
-  <span class="alert-icon">{{ icon('alert') }}</span>
-  <div>
-    <p class="alert-title">{{ t('mode.off') }}</p>
-    <p>{{ t('mode.off_desc') }}</p>
-    <p class="small dev-hint" dir="auto">{{ t('mode.off_dev', missing=live_missing) }}</p>
-  </div>
-</section>
-{% endif %}
-
-<section class="card" aria-labelledby="how-add-title">
-  <h2 id="how-add-title" class="card-title">{{ t('start.how_add') }}</h2>
-  <form id="start-form" class="choice-list" method="post" action="/claims/start" enctype="multipart/form-data"
-        data-upload-endpoint="/claims/start">
-    <label class="choice file-label">
-      <span class="tile">{{ icon('upload') }}</span>
-      <span class="choice-text"><strong>{{ t('action.upload') }}</strong><span>{{ t('action.upload_sub') }}</span></span>
-      <input type="file" name="files" multiple class="visually-hidden-input" data-upload-input
-             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
-    </label>
-    <button type="button" class="choice" data-act="camera">
-      <span class="tile">{{ icon('camera') }}</span>
-      <span class="choice-text"><strong>{{ t('action.camera') }}</strong><span>{{ t('action.camera_sub') }}</span></span>
-    </button>
-    <noscript><button class="btn btn-secondary" type="submit">{{ t('action.upload') }}</button></noscript>
-  </form>
-  <p class="hint">{{ t('start.formats', mb=max_mb) }}</p>
-  <div class="upload-feedback" data-upload-feedback aria-live="polite"></div>
-</section>
-
-<section class="card" aria-labelledby="attach-title">
-  <h2 id="attach-title" class="card-title">{{ t('start.attach_title') }}</h2>
-  <p class="muted">{{ t('start.attach_body') }}</p>
-  <p class="note-line">{{ icon('lock') }}<span>{{ t('start.privacy') }}</span></p>
-  {% if samples_available %}
-  <form method="post" action="/claims/sample" class="sample-start">
-    <button class="btn btn-tertiary" type="submit">{{ icon('sparkle') }}<span>{{ t('action.sample') }}</span></button>
-    <p class="small muted">{{ t('start.sample_note') }}</p>
-  </form>
-  {% endif %}
-</section>
-
-{% if claims %}
-<section class="card" id="drafts" aria-labelledby="drafts-title">
-  <h2 id="drafts-title" class="card-title">{{ t('start.drafts') }}</h2>
-  <ul class="row-list">
-    {% for c in claims %}
-    <li>
-      <a class="row row-link" href="/claims/{{ c.id }}{% if c.status == 'submitted' %}/submitted{% endif %}">
-        <span class="tile">{{ icon('layers') }}</span>
-        <span class="row-text">
-          <strong>{{ t('claim.saved') if c.status == 'submitted' else t('claim.draft') }}{% if c.is_sample %} · {{ t('claim.sample_badge') }}{% endif %}</strong>
-          <span>{{ t('docs.count', n=c.active_documents|length) }}{% if c.reference %} · <bdi dir="ltr">{{ c.reference }}</bdi>{% endif %} · <bdi dir="ltr">{{ c.created_at.strftime('%d/%m/%Y %H:%M') }}</bdi></span>
-        </span>
-        {{ icon('chevron', 'row-chev') }}
-      </a>
-    </li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
+<form id="start-form" class="choice-list" method="post" action="/claims/start" enctype="multipart/form-data"
+      data-upload-endpoint="/claims/start" aria-labelledby="start-title">
+  <label class="choice file-label">
+    <span class="tile">{{ icon('upload') }}</span>
+    <span class="choice-text"><strong>{{ t('action.upload') }}</strong><span>{{ t('action.upload_sub') }}</span></span>
+    <input type="file" name="files" multiple class="visually-hidden-input" data-upload-input
+           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+  </label>
+  <button type="button" class="choice" data-act="camera">
+    <span class="tile">{{ icon('camera') }}</span>
+    <span class="choice-text"><strong>{{ t('action.camera') }}</strong><span>{{ t('action.camera_sub') }}</span></span>
+  </button>
+  <noscript><button class="btn btn-secondary" type="submit">{{ t('action.upload') }}</button></noscript>
+</form>
+<div class="upload-feedback" data-upload-feedback aria-live="polite"></div>
 
 <div class="action-bar">
   <div class="action-inner">

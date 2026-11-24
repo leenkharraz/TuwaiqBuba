@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}{{ t('nav.tab_insurance') }}{% endblock %}
+{% block body_class %}page-app page-home{% endblock %}
+{% block site_header %}
+<header class="app-header">
+  <div class="app-brand-row">
+    <a class="app-brand" href="/home" aria-label="Bupa Arabia"><img class="brand-logo" src="{{ url_for('static', path='img/brand/bupa-logo.png') }}" alt="Bupa Arabia" width="94" height="40"></a>
+  </div>
+  <div class="app-header-inner">
+    <div class="greeting">
+      <span class="avatar" aria-hidden="true">{{ (actor.member.display_name_ar if actor and actor.member else 'B')[:1] }}</span>
+      <p><span class="greeting-hello">{{ t('home.hello') }}</span>
+        <strong dir="auto">{{ actor.member.display_name_ar.split(' ')[0] if actor and actor.member else '' }}</strong></p>
+    </div>
+    <div class="app-header-icons">
+      <button type="button" class="round-icon" data-info-dialog="unavailable-dialog" aria-label="{{ t('home.search') }}">{{ icon('search') }}</button>
+      <button type="button" class="round-icon" data-info-dialog="unavailable-dialog" aria-label="{{ t('home.messages') }}">{{ icon('chat') }}</button>
+      <button type="button" class="round-icon" data-info-dialog="unavailable-dialog" aria-label="{{ t('home.notifications') }}">{{ icon('bell') }}</button>
+    </div>
+  </div>
+</header>
+{% endblock %}
+{% block main_class %}page app-page{% endblock %}
+{% block content %}
+<section class="promo-card" aria-labelledby="hosp-title">
+  <div class="promo-text">
+    <h2 id="hosp-title">{{ t('home.hospitals_title') }}</h2>
+    <p>{{ t('home.hospitals_body') }}</p>
+    <button type="button" class="btn btn-primary promo-btn" data-info-dialog="unavailable-dialog">
+      <span>{{ t('home.explore_now') }}</span>{{ icon('arrow', 'flip arrow-lead') }}</button>
+  </div>
+  <img class="promo-illus" src="{{ url_for('static', path='img/brand/hospitals-illustration.png') }}" alt="" width="144" height="134">
+</section>
+
+<button type="button" class="link-card" data-info-dialog="unavailable-dialog">
+  {{ icon('hospital', 'link-card-icon') }}<span>{{ t('home.all_hospitals') }}</span>{{ icon('arrow', 'flip arrow-lead') }}
+</button>
+
+<h2 class="section-title">{{ t('home.benefits') }}</h2>
+<button type="button" class="link-card" data-info-dialog="unavailable-dialog">
+  {{ icon('benefits', 'link-card-icon') }}<span>{{ t('home.all_benefits') }}</span>{{ icon('arrow', 'flip arrow-lead') }}
+</button>
+
+<h2 class="section-title">{{ t('home.approvals_claims') }}</h2>
+<div class="tile-grid">
+  <button type="button" class="feature-card" data-info-dialog="unavailable-dialog">
+    <span class="feature-head">{{ icon('approvals', 'feature-icon') }}<strong>{{ t('home.approvals_status') }}</strong></span>
+    <span class="feature-sub">{{ t('home.approvals_status_sub') }}</span>
+  </button>
+  <a class="feature-card" href="/claims">
+    <span class="feature-head">{{ icon('claims', 'feature-icon') }}<strong>{{ t('home.claims_status') }}</strong></span>
+    <span class="feature-sub">{{ t('home.claims_status_sub') }}</span>
+  </a>
+</div>
+<a class="feature-card feature-wide" href="/claims/new">
+  <span class="feature-head">{{ icon('submit-claim', 'feature-icon') }}<strong>{{ t('home.submit_claim') }}</strong></span>
+  <span class="feature-sub">{{ t('home.submit_claim_sub') }}</span>
+</a>
+<div class="app-header-tools">
+  <a class="header-link lang-switch" href="/lang/{{ 'en' if lang == 'ar' else 'ar' }}?next={{ current_path|urlencode }}"
+     lang="{{ 'en' if lang == 'ar' else 'ar' }}" aria-label="{{ t('lang.switch_label') }}">{{ t('lang.switch') }}</a>
+</div>
+{% endblock %}
+{% block bottom_nav %}{% include "partials/bottom_nav.html" %}{% endblock %}

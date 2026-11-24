@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}{{ t('track.heading') }}{% endblock %}
+{% block body_class %}page-track{% endblock %}
+{% block journey_header %}
+<div class="journey-head">
+  <div class="journey-inner">
+    <a class="journey-back" href="/claims">{{ icon('chevron', 'flip') }}<span>{{ t('claims.title') }}</span></a>
+    <p class="journey-title"></p>
+    <a class="journey-cancel" href="/home">{{ t('nav.tab_home') }}</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+{% set needs = status in ('needs_completion', 'check_failed') %}
+<div class="track-page" data-track data-track-url="/claims/{{ claim.id }}/track.json" data-track-version="{{ version }}"
+     data-track-live="{{ 'true' if claim.stage in ('submitted', 'auto_check', 'employee_review') and not needs else 'false' }}">
+
+{% if notice == 'submitted' %}
+<p class="alert alert-ok notice-sm" role="status"><span class="alert-icon">{{ icon('check') }}</span><span>{{ t('track.submitted_ok') }}</span></p>
+{% elif notice == 'review' %}
+<p class="alert alert-ok notice-sm" role="status"><span class="alert-icon">{{ icon('check') }}</span><span>{{ t('track.review_sent') }}</span></p>
+{% endif %}
+
+<header class="page-head track-head">
+  <h1>{{ t('track.heading') }}</h1>
+  <p class="track-number"><span class="muted">{{ t('track.number') }}</span> <bdi dir="ltr">{{ claim.claim_number }}</bdi></p>
+  <p><span class="badge badge-lg tone-{{ tone }}">{{ status_label(status) }}</span></p>
+</header>
+
+{% if dup and related %}
+<p class="alert {{ 'alert-warn' if dup.reason_code == 'paid_duplicate' else 'alert-info' }} notice-sm" role="note">
+  <span class="alert-icon">{{ icon('alert' if dup.reason_code == 'paid_duplicate' else 'info') }}</span>
+  <span>{{ dup.message_ar if lang == 'ar' else dup.message_en }} ·
+    <a href="/claims/{{ related.id }}/track"><bdi dir="ltr">{{ related.number }}</bdi></a></span>
+</p>
+{% if dup.reason_code == 'paid_duplicate' and claim.stage == 'employee_review' and not review_requested %}
+<form method="post" action="/claims/{{ claim.id }}/request-review"><button class="btn btn-secondary btn-sm" type="submit">{{ t('track.request_review') }}</button></form>
+{% endif %}
+{% endif %}
+
+<section class="card timeline-card" aria-labelledby="stages-title">
+  <h2 class="sr-only" id="stages-title">{{ t('track.stages') }}</h2>
+  <ol class="timeline">
+    {% for s in stages %}
+    {% set final = s.stage == 'decided' and claim.stage == 'decided' %}
+    {% set state = 'rejected' if (final and claim.decision == 'rejected') else ('done' if s.state == 'done' else ('current' if s.state in ('current', 'paused') else 'upcoming')) %}
+    <li class="tl-step is-{{ state }}" {% if s.state in ('current', 'paused') %}aria-current="step"{% endif %}>
+      <span class="tl-marker" aria-hidden="true">{% if state == 'done' %}{{ icon('check') }}{% elif state == 'rejected' %}{{ icon('x') }}{% endif %}</span>
+      <div class="tl-body">
+        <p class="tl-label">{{ t(s.label_key) }}</p>
+        {% if s.time %}<p class="tl-time"><bdi dir="ltr">{{ s.time }}</bdi></p>{% endif %}
+
+        {% if s.stage == 'auto_check' and s.state == 'paused' %}
+          <div class="tl-needs">
+            <p class="tl-needs-title">{{ status_label(status) }}</p>
+            {% if status == 'check_failed' %}<p>{{ t('track.check_failed_body') }}</p>{% endif %}
+            <ul>{% for i in issues %}<li>{{ i.message_ar if lang == 'ar' else (i.message_en or i.message_ar) }}</li>{% endfor %}</ul>
+            <a class="btn btn-primary btn-sm" href="/claims/{{ claim.id }}">{{ t('track.complete_docs') }}</a>
+            {% if status == 'check_failed' %}
+            <form method="post" action="/claims/{{ claim.id }}/recheck"><button class="btn btn-tertiary btn-sm" type="submit">{{ t('track.retry') }}</button></form>
+            {% endif %}
+          </div>
+        {% elif s.state == 'current' and s.stage in ('submitted', 'auto_check') and estimate.kind == 'initial' %}
+          {% if estimate.late %}
+            <p class="tl-note warn">{{ t('track.late') }}</p>
+            <form method="post" action="/claims/{{ claim.id }}/recheck"><button class="btn btn-secondary btn-sm" type="submit">{{ t('track.retry') }}</button></form>
+          {% elif estimate.show %}
+            <p class="tl-note">{{ t('track.estimate_initial', n=estimate.minutes) }}</p>
+          {% endif %}
+        {% elif s.state == 'current' and s.stage == 'employee_review' and estimate.kind == 'review' %}
+          <p class="tl-note">{{ t('track.review_due', due='') }}<bdi dir="ltr">{{ estimate.due }}</bdi></p>
+          {% if estimate.overdue %}<p class="tl-note warn">{{ t('track.review_overdue') }}</p>{% endif %}
+        {% endif %}
+
+        {% if final and claim.decision == 'rejected' and claim.decision_reason %}
+          <p class="tl-reason-title">{{ t('track.rejection_reason') }}</p>
+          <p class="tl-reason" dir="auto">{{ claim.decision_reason }}</p>
+        {% elif final and claim.decision == 'approved' %}
+          <p class="tl-note">{{ t('track.approved_amount') }}: <bdi dir="ltr" class="num">{{ approved }} {{ claim.currency or 'SAR' }}</bdi></p>
+          {% if claim.payout_status == 'paid' and paid_at %}
+          <p class="tl-note">{{ t('track.paid') }} · <bdi dir="ltr">{{ paid_at }}</bdi></p>
+          {% else %}
+          <p class="tl-note muted">{{ t('track.not_paid') }}</p>
+          {% endif %}
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<details class="card track-more" id="track-details">
+  <summary class="xd-summary"><span class="xd-sign" aria-hidden="true"></span><span>{{ t('track.details') }}</span></summary>
+  <dl class="kv">
+    <div><dt>{{ t('track.category') }}</dt><dd>{{ cat_label(claim.category) }}</dd></div>
+    <div><dt>{{ t('track.amount') }}</dt><dd><bdi dir="ltr" class="num">{{ amount }} {{ claim.currency or 'SAR' }}</bdi></dd></div>
+    <div><dt>{{ t('track.submitted') }}</dt><dd><bdi dir="ltr">{{ submitted }}</bdi></dd></div>
+    <div><dt>{{ t('track.updated') }}</dt><dd><bdi dir="ltr">{{ updated }}</bdi></dd></div>
+  </dl>
+</details>
+
+<details class="card track-more" id="track-docs">
+  <summary class="xd-summary"><span class="xd-sign" aria-hidden="true"></span><span>{{ t('track.attachments') }} ({{ docs|length }})</span></summary>
+  <ul class="row-list">
+    {% for d in docs %}
+    <li><a class="row row-link" href="/documents/{{ d.id }}/file" target="_blank" rel="noopener">
+      <span class="tile">{{ icon('file') }}</span>
+      <span class="row-text"><bdi dir="ltr" class="doc-name">{{ d.original_filename }}</bdi></span>
+      {{ icon('eye', 'row-chev') }}</a></li>
+    {% endfor %}
+  </ul>
+</details>
+
+<p class="list-state" data-list-state hidden></p>
+<template id="list-strings" data-loading="{{ t('claims.loading') }}" data-error="{{ t('track.refresh_error') }}"
+          data-retry="{{ t('claims.retry') }}"></template>
+</div>
+{% endblock %}

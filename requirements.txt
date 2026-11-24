@@ -10,3 +10,6 @@ google-genai>=1.40
 pillow>=10.4
 pypdf>=5.0
 pypdfium2>=4.30
+
+# Excel seed/import of the fictional demo workbook
+openpyxl>=3.1

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}{{ t('claims.title') }}{% endblock %}
+{% block body_class %}page-app page-claims{% endblock %}
+{% block main_class %}page app-page{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>{{ t('home.claims_status') }}</h1>
+  <p class="page-sub">{{ t('home.claims_status_sub') }}</p>
+</header>
+
+<section class="accordion card" data-claims-list data-status-url="/claims/status.json" aria-labelledby="my-claims-toggle">
+  <h2 class="accordion-heading">
+    <button type="button" class="accordion-toggle" id="my-claims-toggle" aria-expanded="true" aria-controls="my-claims-panel"
+            data-accordion data-accordion-key="my-claims">
+      <span class="accordion-title">{{ t('claims.title') }}</span>
+      <span class="count-chip" data-claims-count>{{ t('claims.count', n=rows|length) }}</span>
+      {{ icon('chevron', 'accordion-chev') }}
+    </button>
+  </h2>
+  <div class="accordion-panel" id="my-claims-panel" role="region" aria-labelledby="my-claims-toggle">
+    <p class="list-state" data-list-state hidden></p>
+    {% if rows %}
+    <ul class="claim-list">
+      {% for r in rows %}
+      <li>
+        <a class="claim-row" href="/claims/{{ r.id }}/track" data-claim-link="{{ r.id }}"
+           aria-label="{{ t('claims.open', n=r.number) }}">
+          <span class="claim-row-main">
+            <bdi dir="ltr" class="claim-no">{{ r.number }}</bdi>
+            <span class="claim-meta">{{ cat_label(r.category) }} · <bdi dir="ltr">{{ r.submitted }}</bdi></span>
+          </span>
+          <span class="claim-row-end">
+            <span class="badge tone-{{ r.tone }}" data-status-for="{{ r.id }}" data-status="{{ r.status }}">{{ status_label(r.status) }}</span>
+            {% if r.paid %}<span class="badge tone-ok">{{ t('claims.paid_badge') }}</span>{% endif %}
+          </span>
+          {{ icon('chevron', 'row-chev') }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state">
+      <span class="tile">{{ icon('claims') }}</span>
+      <p>{{ t('claims.empty') }}</p>
+      <a class="btn btn-primary" href="/claims/new">{{ t('home.submit_claim') }}</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if drafts %}
+<section class="card" id="drafts" aria-labelledby="drafts-title">
+  <h2 class="card-title" id="drafts-title">{{ t('claims.drafts') }}</h2>
+  <ul class="row-list">
+    {% for c in drafts %}
+    <li class="row">
+      <span class="tile">{{ icon('file') }}</span>
+      <span class="row-text"><strong>{{ t('claim.draft') }}</strong>
+        <span>{{ t('docs.count', n=c.active_documents|length) }} · <bdi dir="ltr">{{ fmt_local(c.updated_at) }}</bdi></span></span>
+      <a class="btn btn-secondary btn-sm" href="/claims/{{ c.id }}">{{ t('claims.continue_draft') }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<div class="action-bar">
+  <div class="action-inner">
+    <a class="btn btn-primary btn-block" href="/claims/new">{{ icon('plus') }}<span>{{ t('home.submit_claim') }}</span></a>
+  </div>
+</div>
+<template id="list-strings" data-loading="{{ t('claims.loading') }}" data-error="{{ t('claims.load_error') }}"
+          data-retry="{{ t('claims.retry') }}"></template>
+{% endblock %}
+{% block bottom_nav %}{% include "partials/bottom_nav.html" %}{% endblock %}

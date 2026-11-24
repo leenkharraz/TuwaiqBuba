@@ -227,6 +227,8 @@
         }
         if (data.redirect && !claimId()) { window.location.assign(data.redirect); return; }
         if (data.message) toast(data.message, { link: data.new_claim ? { href: data.new_claim, label: data.new_claim_label } : null });
+        var editor = form.closest("details.field-edit");
+        if (editor) editor.open = false;  // a saved field closes its editor (refresh re-opens only other open sections)
         return refresh();
       })
       .catch(function () {
@@ -249,6 +251,8 @@
   function openField(slug) {
     var det = document.getElementById("edit-" + slug);
     var row = document.getElementById("field-" + slug);
+    var section = (det || row) && (det || row).closest("details.xd");
+    if (section) section.open = true;  // the value lives inside the collapsed "Extracted details"
     if (det) {
       det.open = true;
       det.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -461,4 +465,140 @@
   if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
 
   schedulePoll();
+})();
+
+/* ---------------------------------------------------------------------------------------------
+   Entry screens, claim history and tracking (presentation only).
+   --------------------------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+  var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+  var store = {
+    get: function (k) { try { return window.sessionStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { window.sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } }
+  };
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- splash: advance once after a short, configurable delay
+  var body = document.body;
+  if (body.hasAttribute("data-splash-next")) {
+    var delay = parseInt(body.getAttribute("data-splash-delay") || "1400", 10);
+    if (reduced) delay = Math.min(delay, 600);
+    setTimeout(function () { window.location.replace(body.getAttribute("data-splash-next")); }, delay);
+  }
+
+  // ---- informational overlays (features not connected in this demo)
+  document.addEventListener("click", function (e) {
+    var opener = e.target.closest ? e.target.closest("[data-info-dialog]") : null;
+    if (!opener) return;
+    var id = opener.getAttribute("data-info-dialog");
+    var dlg = document.getElementById(id);
+    if (dlg && dlg.showModal) { e.preventDefault(); dlg.showModal(); }
+  });
+  $$("dialog.info-sheet").forEach(function (dlg) {
+    dlg.addEventListener("click", function (e) {
+      if (e.target === dlg) { dlg.close(); return; }
+      var c = e.target.closest ? e.target.closest("[data-close-dialog]") : null;
+      if (c) dlg.close();
+    });
+  });
+
+  // ---- accordion (button + aria-expanded); remembers open state and the selected claim
+  $$("[data-accordion]").forEach(function (btn) {
+    var key = "acc:" + btn.getAttribute("data-accordion-key");
+    var panel = document.getElementById(btn.getAttribute("aria-controls"));
+    function set(open) {
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (panel) panel.hidden = !open;
+      store.set(key, open ? "1" : "0");
+    }
+    set(store.get(key) !== "0");
+    btn.addEventListener("click", function () { set(btn.getAttribute("aria-expanded") !== "true"); });
+  });
+  var selected = store.get("claims:selected");
+  $$("[data-claim-link]").forEach(function (a) {
+    if (a.getAttribute("data-claim-link") === selected) a.classList.add("is-selected");
+    a.addEventListener("click", function () { store.set("claims:selected", a.getAttribute("data-claim-link")); });
+  });
+
+  // ---- field editor: Cancel restores the previous value and closes; Edit buttons expose expanded state
+  document.addEventListener("click", function (e) {
+    var cancel = e.target.closest ? e.target.closest("[data-cancel-edit]") : null;
+    if (!cancel) return;
+    var det = cancel.closest("details.field-edit");
+    setTimeout(function () {  // after the native form reset has restored the original value
+      if (!det) return;
+      det.open = false;
+      var btn = document.querySelector('[aria-controls="' + det.id + '"]');
+      if (btn) btn.focus();
+    }, 0);
+  });
+  document.addEventListener("toggle", function (e) {
+    var det = e.target;
+    if (!det || !det.classList || !det.classList.contains("field-edit")) return;
+    var btn = document.querySelector('[aria-controls="' + det.id + '"]');
+    if (btn) btn.setAttribute("aria-expanded", det.open ? "true" : "false");
+  }, true);
+
+  // ---- status refresh with loading / failure states
+  var strings = $("#list-strings");
+  function S(k) { return strings ? strings.getAttribute("data-" + k) || "" : ""; }
+  function listState(text, retry) {
+    var box = $("[data-list-state]");
+    if (!box) return;
+    box.textContent = "";
+    box.hidden = !text;
+    if (!text) return;
+    var span = document.createElement("span");
+    span.textContent = text;
+    box.appendChild(span);
+    if (retry) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn-link";
+      b.textContent = retry.label;
+      b.addEventListener("click", retry.fn);
+      box.appendChild(b);
+    }
+  }
+  function getJSON(url) {
+    return fetch(url, { headers: { "X-Requested-With": "fetch" }, credentials: "same-origin" })
+      .then(function (r) { if (!r.ok) throw new Error("status"); return r.json(); });
+  }
+
+  var list = $("[data-claims-list]");
+  if (list) {
+    var refreshList = function () {
+      listState(S("loading"));
+      getJSON(list.getAttribute("data-status-url"))
+        .then(function (data) {
+          var rows = data.claims || [];
+          var changed = rows.length !== $$("[data-status-for]").length || rows.some(function (c) {
+            var badge = $('[data-status-for="' + c.id + '"]');
+            return !badge || badge.getAttribute("data-status") !== c.status;
+          });
+          if (changed) { window.location.reload(); return; }
+          listState("");
+        })
+        .catch(function () { listState(S("error"), { label: S("retry"), fn: refreshList }); });
+    };
+    setInterval(function () { if (!document.hidden) refreshList(); }, 20000);
+  }
+
+  var track = $("[data-track]");
+  if (track && track.getAttribute("data-track-live") === "true") {
+    var version = track.getAttribute("data-track-version");
+    var poll = function () {
+      getJSON(track.getAttribute("data-track-url"))
+        .then(function (s) {
+          listState("");
+          if (String(s.version) !== version) { window.location.reload(); return; }
+          setTimeout(poll, 4000);
+        })
+        .catch(function () { listState(S("error"), { label: S("retry"), fn: poll }); });
+    };
+    setTimeout(poll, 3000);
+  }
+
 })();

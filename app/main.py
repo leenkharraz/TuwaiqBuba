@@ -6,6 +6,7 @@ import logging
 import re
 import secrets
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -19,13 +20,14 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from . import export, services, storage
+from . import demo_fixtures, export, lifecycle, services, storage, views
 from .config import settings
 from .db import get_db, init_db
 from .engine import CATEGORIES, DOC_FIELD_KINDS, LOCATIONS, DocCtx, Field, build_claim_view, parse_kind
 from .extraction.samples import get_fixture, list_fixtures, samples_available
 from .i18n import LANGS, resolve, t
-from .models import Acknowledgement, Claim, Correction, Document, utcnow
+from .models import (Acknowledgement, CheckJob, CheckResult, Claim, Correction, Document, InvoiceRecord, Member,
+                     Policy, PolicyRule, SessionLink, SlaTarget, StatusEvent, utcnow)
 from .normalize import fmt_date, fmt_money, norm_text
 from .present import display_value, field_label, issue_html, issue_text, source_label
 from .rules import get_rules
@@ -41,6 +43,11 @@ _SID_RE = re.compile(r"^[A-Za-z0-9_\-]{32,64}$")
 _UUID_RE = re.compile(r"^[0-9a-f\-]{36}$")
 CLAIM_FIELDS = ("patient_name", "patient_identifier", "provider_name", "service_category",
                 "claim_location", "service_date", "diagnosis")
+# Fields a member may correct. Everything read from an invoice or payment receipt (amounts, dates,
+# references, payer, provider) is read-only: a wrong or unreadable document is replaced instead.
+EDITABLE_FIELDS = ("patient_name", "patient_identifier", "service_category", "claim_location", "service_date",
+                   "diagnosis")
+EDITABLE_KEYS = frozenset(f"claim:{n}" for n in EDITABLE_FIELDS)
 CLAIM_FIELD_KINDS = {"patient_name": "text", "patient_identifier": "ident", "provider_name": "text",
                      "service_category": "category", "claim_location": "location", "service_date": "date",
                      "diagnosis": "text"}
@@ -51,6 +58,7 @@ async def lifespan(_app: FastAPI):
     init_db()
     storage.ensure_dirs()
     services.recover_interrupted()
+    lifecycle.schedule(lifecycle.recover_jobs())
     if not settings.live_extraction_configured:
         log.info("Live extraction not configured (missing %s). Sample mode is available.",
                  ", ".join(settings.missing_live_config))
@@ -63,6 +71,32 @@ app = FastAPI(title="Bupa Discovery reimbursement prototype", lifespan=lifespan,
               docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=APP_DIR / "templates")
+
+
+class _AssetVersion:
+    """Content hash used in static URLs (?v=...), so a changed stylesheet or script is never
+    served from a stale browser cache. Recomputed whenever either file's modification time changes."""
+
+    files = ("css/app.css", "js/app.js")
+
+    def __init__(self) -> None:
+        self._key: Any = None
+        self._value = ""
+
+    def __str__(self) -> str:
+        import hashlib
+        paths = [APP_DIR / "static" / f for f in self.files]
+        key = tuple(p.stat().st_mtime_ns for p in paths)
+        if key != self._key:
+            h = hashlib.sha256()
+            for p in paths:
+                h.update(p.read_bytes())
+            self._key, self._value = key, h.hexdigest()[:12]
+        return self._value
+
+
+ASSET_V = _AssetVersion()
+templates.env.globals["asset_v"] = ASSET_V
 
 CSP = (
     "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; "
@@ -86,7 +120,7 @@ async def session_and_security(request: Request, call_next):
         sid = secrets.token_urlsafe(32)
     request.state.sid = sid
     lang = request.cookies.get(LANG_COOKIE)
-    request.state.lang = lang if lang in LANGS else "ar"
+    request.state.lang = lang if lang in LANGS else settings.default_lang
     response = await call_next(request)
     if new_sid:
         response.set_cookie(SESSION_COOKIE, sid, httponly=True, samesite="lax",
@@ -105,18 +139,52 @@ async def session_and_security(request: Request, call_next):
 
 
 def lang_of(request: Request) -> str:
-    return getattr(request.state, "lang", "ar")
+    return getattr(request.state, "lang", settings.default_lang)
 
 
 def is_fetch(request: Request) -> bool:
     return request.headers.get("x-requested-with") == "fetch"
 
 
+@dataclass
+class Actor:
+    """Which fictional member this browser session acts as (demo mode). Not production auth."""
+
+    member_id: Optional[str]
+    member: Optional[Member]
+
+
+def get_actor(db: Session, request: Request) -> Actor:
+    cached = getattr(request.state, "actor", None)
+    if cached is not None:
+        return cached
+    link = db.get(SessionLink, request.state.sid)
+    if link is None and settings.demo_mode:
+        member = db.get(Member, settings.demo_default_member)
+        if member is not None:
+            link = SessionLink(sid=request.state.sid, member_id=member.member_id, role="member")
+            db.add(link)
+            db.commit()
+    member_id = link.member_id if link is not None else None
+    actor = Actor(member_id=member_id, member=db.get(Member, member_id) if member_id else None)
+    request.state.actor = actor
+    return actor
+
+
+def owns(actor: Actor, request: Request, claim: Claim) -> bool:
+    if claim.member_id:
+        return actor.member_id == claim.member_id
+    return claim.session_id == request.state.sid
+
+
 def get_claim(db: Session, request: Request, claim_id: str) -> Claim:
     if not _UUID_RE.match(claim_id or ""):
         raise HTTPException(404)
     claim = db.get(Claim, claim_id)
-    if claim is None or claim.session_id != request.state.sid:
+    if claim is None:
+        raise HTTPException(404)
+    actor = get_actor(db, request)
+    if not owns(actor, request, claim):
         raise HTTPException(404)
     return claim
 
@@ -125,13 +193,17 @@ def get_doc(db: Session, request: Request, doc_id: str) -> Document:
     if not _UUID_RE.match(doc_id or ""):
         raise HTTPException(404)
     doc = db.get(Document, doc_id)
-    if doc is None or doc.claim.session_id != request.state.sid:
+    if doc is None:
+        raise HTTPException(404)
+    actor = get_actor(db, request)
+    if not owns(actor, request, doc.claim):
         raise HTTPException(404)
     return doc
 
 
 def require_draft(claim: Claim) -> None:
-    if claim.status != "draft":
+    """Documents and values can change while drafting, or while a submitted claim waits for completion."""
+    if claim.status != "draft" and not lifecycle.can_complete(claim):
         raise HTTPException(409, detail="claim_locked")
 
 
@@ -174,6 +246,13 @@ def base_context(request: Request, **kw: Any) -> Dict[str, Any]:
         "locations": LOCATIONS,
         "doc_types": DOC_TYPES,
         "current_path": request.url.path,
+        "demo_mode": settings.demo_mode,
+        "actor": getattr(request.state, "actor", None),
+        "fmt_local": views.fmt_local,
+        "cat_ar": views.CATEGORY_AR,
+        "sar": lifecycle.fmt_sar,
+        "cat_label": lambda c: (views.CATEGORY_AR if lang == "ar" else views.CATEGORY_EN).get(c or "", "—"),
+        "status_label": lambda code: views.status_label(code, lang),
         "js_strings": {
             "error": t("msg.error", lang),
             "network": t("msg.network", lang),
@@ -209,6 +288,7 @@ def workspace_context(request: Request, db: Session, claim: Claim) -> Dict[str, 
         step = 3 if (not view.processing and not view.blocking_issues) else 2
     return base_context(
         request, claim=claim, view=view, docs=docs, fixtures=fixtures, used_fixtures=used_fixtures,
+        can_edit=claim.status == "draft" or lifecycle.can_complete(claim), editable_keys=EDITABLE_KEYS,
         other_claims=others, needed_types=needed_types, step=step,
         version=services.state_version(claim), rules=get_rules(),
     )
@@ -217,10 +297,44 @@ def workspace_context(request: Request, db: Session, claim: Claim) -> Dict[str, 
 # ------------------------------------------------------------------ pages
 
 
+SPLASH_COOKIE = "splash_seen"
+
+
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request, db: Session = Depends(get_db)):
-    return templates.TemplateResponse(request, "index.html", base_context(
-        request, claims=session_claims(db, request), step=1))
+def splash(request: Request):
+    """Welcome screen, once per browser session; afterwards "/" goes straight to the home screen."""
+    if request.cookies.get(SPLASH_COOKIE):
+        return RedirectResponse("/home", status_code=303)
+    resp = templates.TemplateResponse(request, "splash.html", base_context(request, delay=settings.splash_delay_ms))
+    resp.set_cookie(SPLASH_COOKIE, "1", samesite="lax", secure=settings.secure_cookies)  # session cookie
+    return resp
+
+
+@app.get("/home", response_class=HTMLResponse)
+def home(request: Request, db: Session = Depends(get_db)):
+    actor = get_actor(db, request)
+    return templates.TemplateResponse(request, "home.html", base_context(request, actor=actor))
+
+
+@app.get("/claims/new", response_class=HTMLResponse)
+def new_claim_page(request: Request, db: Session = Depends(get_db)):
+    get_actor(db, request)
+    return templates.TemplateResponse(request, "index.html", base_context(request, step=1, back_href="/home"))
+
+
+@app.get("/claims", response_class=HTMLResponse)
+def my_claims(request: Request, db: Session = Depends(get_db)):
+    actor = get_actor(db, request)
+    lists = views.member_claims(db, actor.member_id, request.state.sid)
+    return templates.TemplateResponse(request, "claims.html", base_context(
+        request, actor=actor, rows=[views.claim_row(db, c) for c in lists["submitted"]], drafts=lists["drafts"]))
+
+
+@app.get("/claims/status.json")
+def my_claims_status(request: Request, db: Session = Depends(get_db)):
+    actor = get_actor(db, request)
+    lists = views.member_claims(db, actor.member_id, request.state.sid)
+    return {"claims": [{k: v for k, v in views.claim_row(db, c).items()} for c in lists["submitted"]]}
 
 
 @app.get("/lang/{code}")
@@ -237,8 +351,8 @@ def switch_lang(code: str, request: Request, next: str = "/"):
 @app.get("/claims/{claim_id}", response_class=HTMLResponse)
 def claim_page(claim_id: str, request: Request, db: Session = Depends(get_db)):
     claim = get_claim(db, request, claim_id)
-    if claim.status == "submitted":
-        return RedirectResponse(f"/claims/{claim.id}/submitted", status_code=303)
+    if claim.status == "submitted" and not lifecycle.can_complete(claim):
+        return RedirectResponse(f"/claims/{claim.id}/track", status_code=303)
     return templates.TemplateResponse(request, "claim.html", workspace_context(request, db, claim))
 
 
@@ -287,7 +401,7 @@ async def start_claim(request: Request, files: List[UploadFile] = File(default=[
     files = [f for f in files if f.filename]
     if not files:
         return respond(request, ok=False, message=t("upload.error.no_files", lang), status=400)
-    claim = Claim(session_id=request.state.sid)
+    claim = Claim(session_id=request.state.sid, member_id=get_actor(db, request).member_id)
     db.add(claim)
     db.flush()
     accepted, rejected = await _ingest(request, db, claim, files, _source_of(source))
@@ -303,9 +417,9 @@ async def start_claim(request: Request, files: List[UploadFile] = File(default=[
 @app.post("/claims/sample")
 def start_sample_claim(request: Request, db: Session = Depends(get_db)):
     fixtures = [f for f in list_fixtures() if f.starter]
-    if not fixtures:
+    if not fixtures or not settings.test_fixture_routes:
         raise HTTPException(404)
-    claim = Claim(session_id=request.state.sid, is_sample=True)
+    claim = Claim(session_id=request.state.sid, is_sample=True, member_id=get_actor(db, request).member_id)
     db.add(claim)
     db.flush()
     for f in fixtures:
@@ -334,6 +448,8 @@ async def upload_documents(claim_id: str, request: Request, files: List[UploadFi
 
 @app.post("/claims/{claim_id}/sample-documents")
 def add_sample_document(claim_id: str, request: Request, fixture_id: str = Form(...), db: Session = Depends(get_db)):
+    if not settings.test_fixture_routes:
+        raise HTTPException(404)
     claim = get_claim(db, request, claim_id)
     require_draft(claim)
     if not claim.is_sample:
@@ -423,7 +539,8 @@ def grouping_decision(doc_id: str, request: Request, decision: str = Form(...), 
     view = services.build_view(claim)
     proposal = next((p for p in view.proposals if doc.id in p.doc_ids), None)
     move_ids = proposal.doc_ids if proposal else [doc.id]
-    new_claim = Claim(session_id=claim.session_id, is_sample=claim.is_sample, split_from_claim_id=claim.id)
+    new_claim = Claim(session_id=claim.session_id, is_sample=claim.is_sample, split_from_claim_id=claim.id,
+                      member_id=claim.member_id)
     db.add(new_claim)
     db.flush()
     for d in claim.active_documents:
@@ -473,6 +590,8 @@ def save_field(claim_id: str, request: Request, field_key: str = Form(...), valu
     claim = get_claim(db, request, claim_id)
     require_draft(claim)
     lang = lang_of(request)
+    if field_key not in EDITABLE_KEYS:
+        return respond(request, claim.id, ok=False, message=t("msg.read_only_field", lang), status=403)
     fld = _current_field(claim, field_key)
     if fld is None:
         raise HTTPException(400)
@@ -543,7 +662,7 @@ def acknowledge(claim_id: str, request: Request, issue_key: str = Form(...), und
 def review_page(claim_id: str, request: Request, error: str = "", db: Session = Depends(get_db)):
     claim = get_claim(db, request, claim_id)
     if claim.status == "submitted":
-        return RedirectResponse(f"/claims/{claim.id}/submitted", status_code=303)
+        return RedirectResponse(f"/claims/{claim.id}/track", status_code=303)
     view = services.build_view(claim)
     preview = export.build_export(claim, view, reference=None, submitted_at=None)
     return templates.TemplateResponse(request, "review.html", base_context(
@@ -557,7 +676,7 @@ def submit_claim(claim_id: str, request: Request, reviewed: str = Form(""), subm
                  db: Session = Depends(get_db)):
     claim = get_claim(db, request, claim_id)
     if claim.status == "submitted":
-        return RedirectResponse(f"/claims/{claim.id}/submitted", status_code=303)
+        return RedirectResponse(f"/claims/{claim.id}/track", status_code=303)
     if not reviewed:
         return RedirectResponse(f"/claims/{claim.id}/review?error=confirm", status_code=303)
     if not secrets.compare_digest(submit_token, claim.submit_token):
@@ -566,7 +685,7 @@ def submit_claim(claim_id: str, request: Request, reviewed: str = Form(""), subm
     if not view.ready:
         return RedirectResponse(f"/claims/{claim.id}/review?error=blocked", status_code=303)
     now = utcnow()
-    reference = export.new_reference(now)
+    reference = lifecycle.new_claim_number(now)
     snapshot = export.build_export(claim, view, reference=reference, submitted_at=now)
     result = db.execute(
         update(Claim)
@@ -576,10 +695,73 @@ def submit_claim(claim_id: str, request: Request, reviewed: str = Form(""), subm
     )
     if result.rowcount != 1:  # someone (a double click) got there first
         db.rollback()
-        return RedirectResponse(f"/claims/{claim.id}/submitted", status_code=303)
+        return RedirectResponse(f"/claims/{claim.id}/track", status_code=303)
+    db.refresh(claim)
+    claim.claim_number = reference
+    actor = get_actor(db, request)
+    job = lifecycle.submit(db, claim, view, actor.member_id, actor.member_id or "session")
     db.commit()
-    log.info("Claim %s saved locally with reference %s", claim.id, reference)
-    return RedirectResponse(f"/claims/{claim.id}/submitted", status_code=303)
+    log.info("Claim %s submitted with number %s", claim.id, reference)
+    lifecycle.schedule([job.id])
+    return RedirectResponse(f"/claims/{claim.id}/track?notice=submitted", status_code=303)
+
+
+# ------------------------------------------------------------------ tracking (member)
+
+
+@app.get("/claims/{claim_id}/track", response_class=HTMLResponse)
+def track_page(claim_id: str, request: Request, notice: str = "", db: Session = Depends(get_db)):
+    claim = get_claim(db, request, claim_id)
+    if claim.stage is None:
+        return RedirectResponse(f"/claims/{claim.id}", status_code=303)
+    ctx = views.track_context(db, claim)
+    return templates.TemplateResponse(request, "track.html", base_context(request, notice=notice, back_href="/claims",
+                                                                          **ctx))
+
+
+@app.get("/claims/{claim_id}/track.json")
+def track_state(claim_id: str, request: Request, db: Session = Depends(get_db)):
+    claim = get_claim(db, request, claim_id)
+    checks = lifecycle.latest_checks(db, claim)
+    return {"version": claim.version, "stage": claim.stage, "status": lifecycle.status_code(claim, checks)}
+
+
+@app.post("/claims/{claim_id}/resubmit")
+def resubmit_claim(claim_id: str, request: Request, version: int = Form(...), db: Session = Depends(get_db)):
+    claim = get_claim(db, request, claim_id)
+    if any(d.status in ("queued", "processing") for d in claim.active_documents):
+        return RedirectResponse(f"/claims/{claim.id}?error=reading", status_code=303)
+    actor = get_actor(db, request)
+    job = lifecycle.resubmit(db, claim, version, actor.member_id or "session")
+    if job is not None:
+        view = services.build_view(claim)
+        claim.snapshot_json = json.dumps(export.build_export(claim, view, reference=claim.claim_number,
+                                                             submitted_at=claim.submitted_at), ensure_ascii=False)
+        db.commit()
+        lifecycle.schedule([job.id])
+    else:
+        db.rollback()
+    return RedirectResponse(f"/claims/{claim.id}/track", status_code=303)
+
+
+@app.post("/claims/{claim_id}/recheck")
+def recheck_claim(claim_id: str, request: Request, db: Session = Depends(get_db)):
+    claim = get_claim(db, request, claim_id)
+    job = lifecycle.retry_checks(db, claim)
+    db.commit()
+    if job is not None:
+        lifecycle.schedule([job.id])
+    return RedirectResponse(f"/claims/{claim.id}/track", status_code=303)
+
+
+@app.post("/claims/{claim_id}/request-review")
+def member_request_review(claim_id: str, request: Request, db: Session = Depends(get_db)):
+    claim = get_claim(db, request, claim_id)
+    if claim.stage in ("employee_review", "auto_check"):
+        lifecycle.add_event(db, claim, claim.stage, "member_requested_review", "member",
+                            get_actor(db, request).member_id, idem=f"{claim.id}:member_review:{claim.check_round}")
+        db.commit()
+    return RedirectResponse(f"/claims/{claim.id}/track?notice=review", status_code=303)
 
 
 def _submitted_snapshot(claim: Claim) -> Dict[str, Any]:
@@ -588,14 +770,12 @@ def _submitted_snapshot(claim: Claim) -> Dict[str, Any]:
     return json.loads(claim.snapshot_json)
 
 
-@app.get("/claims/{claim_id}/submitted", response_class=HTMLResponse)
+@app.get("/claims/{claim_id}/submitted")
 def submitted_page(claim_id: str, request: Request, db: Session = Depends(get_db)):
+    """Old confirmation address: submitted claims open their tracking page directly."""
     claim = get_claim(db, request, claim_id)
-    if claim.status != "submitted":
-        return RedirectResponse(f"/claims/{claim.id}", status_code=303)
-    snap = _submitted_snapshot(claim)
-    return templates.TemplateResponse(request, "submitted.html", base_context(
-        request, claim=claim, snap=snap, step=4))
+    target = f"/claims/{claim.id}/track" if claim.status == "submitted" else f"/claims/{claim.id}"
+    return RedirectResponse(target, status_code=303)
 
 
 @app.get("/claims/{claim_id}/print", response_class=HTMLResponse)
@@ -660,7 +840,8 @@ def document_page(doc_id: str, page: int, request: Request, db: Session = Depend
 async def http_error(request: Request, exc: HTTPException):
     lang = lang_of(request)
     msg = t("msg.claim_locked", lang) if exc.detail == "claim_locked" else (
-        t("msg.not_found", lang) if exc.status_code == 404 else t("msg.error", lang))
+        t("msg.not_found", lang) if exc.status_code == 404 else (
+            t("msg.forbidden", lang) if exc.status_code == 403 else t("msg.error", lang)))
     if is_fetch(request) or request.url.path.startswith(("/documents/", "/claims/")) and request.method == "POST":
         return JSONResponse({"ok": False, "message": msg}, status_code=exc.status_code)
     return templates.TemplateResponse(request, "error.html", base_context(request, message=msg, step=1),

@@ -14,72 +14,48 @@
   {{ t('fstate.' ~ fld.status) }}</span>
 {%- endmacro %}
 
-{% macro source_btn(src, t, source_label) -%}
-{% if src %}
-<button type="button" class="source-link" data-source-doc="{{ src.doc_id }}" data-source-page="{{ src.page or 1 }}"
-        data-source-excerpt="{{ src.excerpt or '' }}" data-source-name="{{ src.filename }}"
-        aria-label="{{ t('source.open') }}: {{ source_label(src) }}">
-  {{ icon(src.doc_type or 'other') }}<span>{{ source_label(src) }}</span>{% if src.page and src.page > 1 %}<span class="muted"> · {{ t('source.page', n=src.page) }}</span>{% endif %}
-</button>
-{% endif %}
-{%- endmacro %}
-
-{# One extracted/corrected field with its source, status and inline editor #}
-{% macro field_row(fld, label, claim, t, display_value, source_label, categories=(), locations=(), editable=True) -%}
+{#
+  One extracted value: label and value only. Where a value came from (document, page, excerpt)
+  is kept on the server for validation and audit and is not shown to the customer.
+  `editable` is true only for patient/visit fields the member may correct; invoice and payment
+  receipt values are always read-only (also enforced on the server).
+#}
+{% macro field_row(fld, label, claim, t, display_value, source_label, categories=(), locations=(), editable=False) -%}
 {% set sid = slug(fld.key) %}
-<div class="field-row status-{{ fld.status }}" id="field-{{ sid }}">
-  <div class="field-head">
-    {% if editable and claim.status == 'draft' %}
-    <button type="button" class="tile tile-sm tile-btn" data-act="field" data-field="{{ sid }}"
-            aria-label="{{ t('field.edit') }}: {{ label }}">{{ icon('edit') }}</button>
-    {% else %}<span class="tile tile-sm" aria-hidden="true">{{ icon('check') }}</span>{% endif %}
-    <div class="field-main">
-      <span class="field-label" id="label-{{ sid }}">{{ label }}</span>
-      <div class="field-value {% if fld.kind in ('amount', 'ident', 'currency', 'date') %}ltr-val{% endif %}"
-           {% if fld.kind in ('amount', 'ident', 'currency', 'date') %}dir="ltr"{% endif %}>
-        {% if fld.value is none %}<span class="muted">—</span>{% else %}{{ display_value(fld) }}{% endif %}
-      </div>
-    </div>
-    {% if fld.status != 'extracted' %}{{ state_chip(fld, t) }}{% endif %}
-  </div>
-  {% if fld.note and fld.status == 'needs_review' %}
-    <p class="field-note">{{ icon('alert') }}{{ t('field.note.' ~ fld.note) }}{% if fld.extraction_note %} — {{ fld.extraction_note }}{% endif %}</p>
-  {% elif fld.note == 'matched_by_identifier' %}
-    <p class="field-note subtle">{{ t('field.note.matched_by_identifier') }}</p>
-  {% endif %}
-  {% if fld.original_value is not none and fld.status in ('corrected', 'confirmed') and fld.original_value != fld.value %}
-    <p class="excerpt-box field-original"><span class="excerpt-label">{{ t('fstate.' ~ fld.status) }}</span><span dir="auto">{{ t('field.original', value=fld.original_value) }}</span></p>
-  {% endif %}
-  <div class="field-sources">
-    {% if fld.sources|length == 1 or fld.candidates|length <= 1 %}
-      {% for src in fld.sources[:3] %}{{ source_btn(src, t, source_label) }}{% endfor %}
-      {% if fld.sources|length > 3 %}<span class="muted small">{{ t('source.many', n=fld.sources|length) }}</span>{% endif %}
+{% set ltr = fld.kind in ('amount', 'ident', 'currency', 'date') %}
+<div class="xrow{% if fld.status == 'needs_review' %} is-review{% endif %}" id="field-{{ sid }}">
+  <div class="xrow-line">
+    <span class="xrow-label" id="label-{{ sid }}">{{ label }}</span>
+    <span class="xrow-value"{% if ltr %} dir="ltr"{% endif %}>{% if fld.value is none %}—{% else %}{{ display_value(fld) }}{% endif %}</span>
+    {% if editable %}
+    <button type="button" class="xrow-edit" data-act="field" data-field="{{ sid }}" aria-controls="edit-{{ sid }}" aria-expanded="false"
+            aria-label="{{ t('field.edit') }}: {{ label }}">{{ t('field.edit') }}</button>
     {% endif %}
   </div>
-  {% if fld.candidates|length > 1 %}
-    <div class="candidates{% if fld.status == 'extracted' %} is-neutral{% endif %}">
+  {% if fld.note and fld.status == 'needs_review' %}
+    <p class="xrow-note">{{ icon('alert') }}{{ t('field.note.' ~ fld.note) }}</p>
+  {% endif %}
+  {% if editable %}
+  <details class="field-edit" id="edit-{{ sid }}" data-field="{{ sid }}">
+    <summary class="sr-only">{{ t('field.edit') }}: {{ label }}</summary>
+    {% if fld.candidates|length > 1 %}
+    <div class="candidates">
       <p class="small">{{ t('field.candidates') }}</p>
       <ul>
       {% for cand in fld.candidates %}
         <li class="candidate">
           <span class="cand-value"><bdi>{{ cand.value }}</bdi></span>
-          {% for src in cand.sources[:2] %}{{ source_btn(src, t, source_label) }}{% endfor %}
-          {% if editable and claim.status == 'draft' %}
           <form method="post" action="/claims/{{ claim.id }}/fields" data-async>
             <input type="hidden" name="field_key" value="{{ fld.key }}">
             <input type="hidden" name="value" value="{{ cand.value }}">
             <input type="hidden" name="kind" value="confirmation">
             <button class="btn btn-ghost btn-sm" type="submit">{{ t('field.choose') }}</button>
           </form>
-          {% endif %}
         </li>
       {% endfor %}
       </ul>
     </div>
-  {% endif %}
-  {% if editable and claim.status == 'draft' %}
-  <details class="field-edit" id="edit-{{ sid }}" data-field="{{ sid }}">
-    <summary class="btn-link">{{ icon('edit') }}{{ t('field.enter') if fld.value is none else t('field.edit') }}</summary>
+    {% endif %}
     <form method="post" action="/claims/{{ claim.id }}/fields" data-async class="edit-form">
       <input type="hidden" name="field_key" value="{{ fld.key }}">
       <label class="sr-only" for="input-{{ sid }}">{{ label }}</label>
@@ -89,10 +65,6 @@
       {% elif fld.kind == 'amount' %}
         <input id="input-{{ sid }}" name="value" type="text" inputmode="decimal" required dir="ltr"
                pattern="[0-9٠-٩.,٫]+" value="{{ fld.value if fld.value is not none else '' }}" autocomplete="off">
-      {% elif fld.kind == 'currency' %}
-        <input id="input-{{ sid }}" name="value" type="text" required dir="ltr" maxlength="3" minlength="3"
-               pattern="[A-Za-z]{3}" placeholder="SAR" value="{{ fld.value if fld.typed else '' }}" autocomplete="off"
-               class="upper">
       {% elif fld.kind == 'category' %}
         <select id="input-{{ sid }}" name="value" required>
           <option value="">{{ t('choose') }}</option>
@@ -112,6 +84,7 @@
       {% endif %}
       <div class="edit-actions">
         <button class="btn btn-primary btn-sm" type="submit">{{ t('field.save') }}</button>
+        <button class="btn btn-tertiary btn-sm" type="reset" data-cancel-edit>{{ t('field.cancel') }}</button>
       </div>
     </form>
     {% if fld.status in ('corrected', 'confirmed') %}

@@ -43,11 +43,16 @@ def _submit(client, cid, reviewed=True):
     return client.post(f"/claims/{cid}/submit", data=data, follow_redirects=False)
 
 
+def data_number(page):
+    return re.search(r"CLM-\d{8}-[0-9A-F]{6}", page)
+
+
 def test_sample_mode_works_without_credentials_end_to_end(client):
     cid = _start_sample(client)
     html = _workspace(client, cid)
     assert "يرجى إرفاق إثبات السداد لهذه الفاتورة" in html
-    assert "وضع المستندات التجريبية" in client.get(f"/claims/{cid}").text
+    page = client.get(f"/claims/{cid}").text
+    assert "وضع المستندات التجريبية" not in page and "بيانات تجريبية" not in page  # no sample labels shown
 
     _add(client, cid, "payment_receipt_en")
     _add(client, cid, "lab_result_ar")
@@ -56,9 +61,9 @@ def test_sample_mode_works_without_credentials_end_to_end(client):
     assert "575.00 SAR" in html
 
     r = _submit(client, cid)
-    assert r.status_code == 303 and r.headers["location"].endswith("/submitted")
-    page = client.get(f"/claims/{cid}/submitted").text
-    assert "تم حفظ المطالبة في النموذج التجريبي" in page
+    assert r.status_code == 303 and r.headers["location"] == f"/claims/{cid}/track?notice=submitted"
+    page = client.get(r.headers["location"]).text
+    assert "تم إرسال مطالبتك" in page and data_number(page)
 
     data = client.get(f"/claims/{cid}/export.json").json()
     for key in ("schema_version", "claim", "patient", "provider", "invoices", "payments", "services",
@@ -96,8 +101,8 @@ def test_duplicate_submission_is_prevented(client):
     token = re.search(r'name="submit_token" value="([^"]+)"', page).group(1)
     first = client.post(f"/claims/{cid}/submit", data={"submit_token": token, "reviewed": "1"}, follow_redirects=False)
     second = client.post(f"/claims/{cid}/submit", data={"submit_token": token, "reviewed": "1"}, follow_redirects=False)
-    assert first.headers["location"].endswith("/submitted")
-    assert second.headers["location"].endswith("/submitted")
+    assert first.headers["location"] == f"/claims/{cid}/track?notice=submitted"
+    assert second.headers["location"] == f"/claims/{cid}/track"
     with SessionLocal() as db:
         claim = db.get(Claim, cid)
         ref = claim.reference
@@ -136,9 +141,13 @@ def test_removed_document_withdraws_values_and_supersedes_its_corrections(client
     cid = _start_sample(client)
     _add(client, cid, "payment_receipt_en")
     receipt = next(d for d in _docs(cid) if d.fixture_id == "payment_receipt_en")
-    r = client.post(f"/claims/{cid}/fields", data={"field_key": f"doc:{receipt.id}:paid_amount", "value": "575.00",
-                                                   "kind": "confirmation"}, headers=FETCH)
-    assert r.json()["ok"]
+    r = client.post(f"/claims/{cid}/fields", data={"field_key": f"doc:{receipt.id}:paid_amount", "value": "1.00",
+                                                   "kind": "correction"}, headers=FETCH)
+    assert r.status_code == 403 and r.json()["ok"] is False  # payment documents can't be edited
+    with SessionLocal() as db:  # a correction recorded before this rule existed
+        db.add(Correction(claim_id=cid, field_key=f"doc:{receipt.id}:paid_amount", kind="confirmation",
+                          original_value='"575.00"', corrected_value='"575.00"'))
+        db.commit()
     assert "يرجى إرفاق إثبات السداد" not in _workspace(client, cid)
     client.post(f"/documents/{receipt.id}/remove", headers=FETCH)
     assert "يرجى إرفاق إثبات السداد" in _workspace(client, cid)
@@ -191,7 +200,7 @@ def test_real_mode_without_key_never_fakes_extraction(client):
     doc = _docs(cid)[0]
     assert doc.status == "unavailable" and doc.extraction_json is None
     html = _workspace(client, cid)
-    assert "لن نملأ بياناته بقيم غير حقيقية" in html
+    assert "لم نتمكن من قراءة" in html and "invoice.png" in html and "Gemini" not in html
     assert "is-ready" not in html
     # even the bundled fixture file uploaded normally is not matched to its sample data
     fixture = open("fixtures/samples/outpatient_invoice_ar.png", "rb").read()
@@ -292,5 +301,5 @@ def test_documents_are_scoped_to_the_session(client, other_client):
 
 def test_english_switch(client):
     client.get("/lang/en?next=/")
-    page = client.get("/").text
+    page = client.get("/claims/new").text  # "/" is now the welcome screen
     assert 'lang="en"' in page and 'dir="ltr"' in page and "New reimbursement claim" in page
